@@ -6,7 +6,13 @@ import type { Setting } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImageUpload } from "@/components/media/image-upload";
 import { updateIdentityAction, type FormState } from "./actions";
 
@@ -53,10 +59,26 @@ export function IdentityForm({ setting, onSaved }: { setting: Setting; onSaved?:
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <ImageUpload name="logoLightUrl" label="Logo (light background)" purpose="branding" defaultValue={setting.logoLightUrl} />
-          <ImageUpload name="logoDarkUrl" label="Logo (dark background)" purpose="branding" defaultValue={setting.logoDarkUrl} />
+          <ImageUpload
+            name="logoLightUrl"
+            label="Logo (light background)"
+            purpose="branding"
+            defaultValue={setting.logoLightUrl}
+          />
+          <ImageUpload
+            name="logoDarkUrl"
+            label="Logo (dark background)"
+            purpose="branding"
+            defaultValue={setting.logoDarkUrl}
+          />
         </div>
-        <ImageUpload name="faviconUrl" label="Favicon" purpose="favicon" defaultValue={setting.faviconUrl} hint="Square image, at least 64x64." />
+        <ImageUpload
+          name="faviconUrl"
+          label="Favicon"
+          purpose="favicon"
+          defaultValue={setting.faviconUrl}
+          hint="Square image, at least 64x64."
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -97,7 +119,11 @@ export function IdentityForm({ setting, onSaved }: { setting: Setting; onSaved?:
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="borderRadius">Corner style</Label>
-            <Select name="borderRadius" defaultValue={setting.borderRadius} onValueChange={setBorderRadius}>
+            <Select
+              name="borderRadius"
+              defaultValue={setting.borderRadius}
+              onValueChange={setBorderRadius}
+            >
               <SelectTrigger id="borderRadius">
                 <SelectValue />
               </SelectTrigger>
@@ -125,7 +151,9 @@ export function IdentityForm({ setting, onSaved }: { setting: Setting; onSaved?:
         </div>
 
         {state.error && <p className="text-sm text-destructive">{state.error}</p>}
-        {state.ok && state.message && <p className="text-sm text-status-available">{state.message}</p>}
+        {state.ok && state.message && (
+          <p className="text-status-available text-sm">{state.message}</p>
+        )}
 
         <Button type="submit" disabled={isPending}>
           {isPending ? "Saving…" : "Save branding"}
@@ -151,7 +179,9 @@ export function IdentityForm({ setting, onSaved }: { setting: Setting; onSaved?:
               disabled
               className="w-full px-4 py-2 text-sm font-medium text-white"
               style={{
-                backgroundColor: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(brandColor) ? brandColor : "#2563eb",
+                backgroundColor: /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(brandColor)
+                  ? brandColor
+                  : "#2563eb",
                 borderRadius: radiusPx,
               }}
             >

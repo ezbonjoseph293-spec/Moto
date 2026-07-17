@@ -13,11 +13,7 @@ export async function getSettings(dealershipId: string) {
   return db.setting.findUniqueOrThrow({ where: { dealershipId } });
 }
 
-export async function updateIdentity(
-  dealershipId: string,
-  actorId: string,
-  input: IdentityInput,
-) {
+export async function updateIdentity(dealershipId: string, actorId: string, input: IdentityInput) {
   const db = forDealership(dealershipId);
   const before = await db.setting.findUniqueOrThrow({ where: { dealershipId } });
 
@@ -152,11 +148,7 @@ export async function listMenuItems(dealershipId: string) {
   };
 }
 
-export async function createMenuItem(
-  dealershipId: string,
-  actorId: string,
-  input: MenuItemInput,
-) {
+export async function createMenuItem(dealershipId: string, actorId: string, input: MenuItemInput) {
   const db = forDealership(dealershipId);
   const maxOrder = await db.menu.aggregate({
     where: { dealershipId, location: input.location },

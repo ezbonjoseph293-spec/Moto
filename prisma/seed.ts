@@ -17,14 +17,7 @@ type VehicleSeed = {
   price: number;
   discountPrice?: number;
   mileage: number;
-  fuelType:
-    | "PETROL"
-    | "DIESEL"
-    | "ELECTRIC"
-    | "HYBRID"
-    | "PLUGIN_HYBRID"
-    | "LPG"
-    | "OTHER";
+  fuelType: "PETROL" | "DIESEL" | "ELECTRIC" | "HYBRID" | "PLUGIN_HYBRID" | "LPG" | "OTHER";
   transmission: "MANUAL" | "AUTOMATIC" | "CVT" | "SEMI_AUTOMATIC";
   driveType: "FWD" | "RWD" | "AWD" | "FOUR_WD";
   condition: "NEW" | "USED" | "IMPORTED" | "CERTIFIED_PRE_OWNED";
@@ -40,21 +33,266 @@ const BRANDS = ["Toyota", "Mercedes-Benz", "BMW", "Land Rover", "Nissan", "Ford"
 const BODY_TYPES = ["SUV", "Sedan", "Pickup", "Hatchback", "Coupe"] as const;
 
 const VEHICLES: VehicleSeed[] = [
-  { brand: "Toyota", bodyType: "SUV", title: "Toyota Land Cruiser Prado", year: 2021, price: 62_000_000, mileage: 34_000, fuelType: "DIESEL", transmission: "AUTOMATIC", driveType: "FOUR_WD", condition: "USED", color: "Pearl White", seats: 7, doors: 5, engineSizeCc: 2800, status: "AVAILABLE", isFeatured: true },
-  { brand: "Toyota", bodyType: "Sedan", title: "Toyota Corolla Altis", year: 2022, price: 28_500_000, mileage: 12_000, fuelType: "PETROL", transmission: "CVT", driveType: "FWD", condition: "USED", color: "Silver", seats: 5, doors: 4, engineSizeCc: 1800, status: "AVAILABLE" },
-  { brand: "Toyota", bodyType: "Pickup", title: "Toyota Hilux Double Cab", year: 2020, price: 48_000_000, mileage: 61_000, fuelType: "DIESEL", transmission: "MANUAL", driveType: "FOUR_WD", condition: "USED", color: "Grey", seats: 5, doors: 4, engineSizeCc: 2400, status: "AVAILABLE" },
-  { brand: "Toyota", bodyType: "SUV", title: "Toyota RAV4 Hybrid", year: 2023, price: 54_000_000, mileage: 8_000, fuelType: "HYBRID", transmission: "AUTOMATIC", driveType: "AWD", condition: "IMPORTED", color: "Blue", seats: 5, doors: 5, engineSizeCc: 2500, status: "AVAILABLE", isFeatured: true },
-  { brand: "Mercedes-Benz", bodyType: "Sedan", title: "Mercedes-Benz C200", year: 2021, price: 89_000_000, mileage: 22_000, fuelType: "PETROL", transmission: "AUTOMATIC", driveType: "RWD", condition: "USED", color: "Obsidian Black", seats: 5, doors: 4, engineSizeCc: 2000, status: "AVAILABLE", isFeatured: true },
-  { brand: "Mercedes-Benz", bodyType: "SUV", title: "Mercedes-Benz GLE 350", year: 2022, price: 165_000_000, mileage: 15_000, fuelType: "PETROL", transmission: "AUTOMATIC", driveType: "AWD", condition: "USED", color: "White", seats: 5, doors: 5, engineSizeCc: 3000, status: "RESERVED" },
-  { brand: "Mercedes-Benz", bodyType: "Coupe", title: "Mercedes-Benz E-Class Coupe", year: 2020, price: 110_000_000, mileage: 41_000, fuelType: "PETROL", transmission: "AUTOMATIC", driveType: "RWD", condition: "USED", color: "Red", seats: 4, doors: 2, engineSizeCc: 2000, status: "AVAILABLE" },
-  { brand: "BMW", bodyType: "Sedan", title: "BMW 320i M Sport", year: 2021, price: 92_000_000, mileage: 26_000, fuelType: "PETROL", transmission: "AUTOMATIC", driveType: "RWD", condition: "USED", color: "Alpine White", seats: 5, doors: 4, engineSizeCc: 2000, status: "AVAILABLE" },
-  { brand: "BMW", bodyType: "SUV", title: "BMW X5 xDrive40i", year: 2022, price: 178_000_000, mileage: 18_500, fuelType: "PETROL", transmission: "AUTOMATIC", driveType: "AWD", condition: "USED", color: "Black Sapphire", seats: 5, doors: 5, engineSizeCc: 3000, status: "AVAILABLE", isFeatured: true },
-  { brand: "Land Rover", bodyType: "SUV", title: "Range Rover Sport HSE", year: 2021, price: 210_000_000, mileage: 29_000, fuelType: "DIESEL", transmission: "AUTOMATIC", driveType: "FOUR_WD", condition: "USED", color: "Santorini Black", seats: 5, doors: 5, engineSizeCc: 3000, status: "SOLD" },
-  { brand: "Land Rover", bodyType: "SUV", title: "Land Rover Defender 110", year: 2023, price: 245_000_000, mileage: 5_000, fuelType: "DIESEL", transmission: "AUTOMATIC", driveType: "FOUR_WD", condition: "IMPORTED", color: "Pangea Green", seats: 5, doors: 5, engineSizeCc: 3000, status: "AVAILABLE", isFeatured: true },
-  { brand: "Nissan", bodyType: "Hatchback", title: "Nissan Note e-Power", year: 2022, price: 22_000_000, mileage: 14_000, fuelType: "HYBRID", transmission: "CVT", driveType: "FWD", condition: "IMPORTED", color: "Orange", seats: 5, doors: 5, engineSizeCc: 1200, status: "AVAILABLE" },
-  { brand: "Nissan", bodyType: "SUV", title: "Nissan X-Trail", year: 2020, price: 39_000_000, mileage: 55_000, fuelType: "PETROL", transmission: "CVT", driveType: "AWD", condition: "USED", color: "Grey", seats: 7, doors: 5, engineSizeCc: 2000, status: "AVAILABLE" },
-  { brand: "Ford", bodyType: "Pickup", title: "Ford Ranger Wildtrak", year: 2021, price: 51_000_000, mileage: 38_000, fuelType: "DIESEL", transmission: "AUTOMATIC", driveType: "FOUR_WD", condition: "USED", color: "Blue", seats: 5, doors: 4, engineSizeCc: 2000, status: "AVAILABLE" },
-  { brand: "Ford", bodyType: "SUV", title: "Ford Everest Titanium", year: 2019, price: 44_000_000, mileage: 68_000, fuelType: "DIESEL", transmission: "AUTOMATIC", driveType: "FOUR_WD", condition: "USED", color: "White", seats: 7, doors: 5, engineSizeCc: 2000, status: "ARCHIVED" },
+  {
+    brand: "Toyota",
+    bodyType: "SUV",
+    title: "Toyota Land Cruiser Prado",
+    year: 2021,
+    price: 62_000_000,
+    mileage: 34_000,
+    fuelType: "DIESEL",
+    transmission: "AUTOMATIC",
+    driveType: "FOUR_WD",
+    condition: "USED",
+    color: "Pearl White",
+    seats: 7,
+    doors: 5,
+    engineSizeCc: 2800,
+    status: "AVAILABLE",
+    isFeatured: true,
+  },
+  {
+    brand: "Toyota",
+    bodyType: "Sedan",
+    title: "Toyota Corolla Altis",
+    year: 2022,
+    price: 28_500_000,
+    mileage: 12_000,
+    fuelType: "PETROL",
+    transmission: "CVT",
+    driveType: "FWD",
+    condition: "USED",
+    color: "Silver",
+    seats: 5,
+    doors: 4,
+    engineSizeCc: 1800,
+    status: "AVAILABLE",
+  },
+  {
+    brand: "Toyota",
+    bodyType: "Pickup",
+    title: "Toyota Hilux Double Cab",
+    year: 2020,
+    price: 48_000_000,
+    mileage: 61_000,
+    fuelType: "DIESEL",
+    transmission: "MANUAL",
+    driveType: "FOUR_WD",
+    condition: "USED",
+    color: "Grey",
+    seats: 5,
+    doors: 4,
+    engineSizeCc: 2400,
+    status: "AVAILABLE",
+  },
+  {
+    brand: "Toyota",
+    bodyType: "SUV",
+    title: "Toyota RAV4 Hybrid",
+    year: 2023,
+    price: 54_000_000,
+    mileage: 8_000,
+    fuelType: "HYBRID",
+    transmission: "AUTOMATIC",
+    driveType: "AWD",
+    condition: "IMPORTED",
+    color: "Blue",
+    seats: 5,
+    doors: 5,
+    engineSizeCc: 2500,
+    status: "AVAILABLE",
+    isFeatured: true,
+  },
+  {
+    brand: "Mercedes-Benz",
+    bodyType: "Sedan",
+    title: "Mercedes-Benz C200",
+    year: 2021,
+    price: 89_000_000,
+    mileage: 22_000,
+    fuelType: "PETROL",
+    transmission: "AUTOMATIC",
+    driveType: "RWD",
+    condition: "USED",
+    color: "Obsidian Black",
+    seats: 5,
+    doors: 4,
+    engineSizeCc: 2000,
+    status: "AVAILABLE",
+    isFeatured: true,
+  },
+  {
+    brand: "Mercedes-Benz",
+    bodyType: "SUV",
+    title: "Mercedes-Benz GLE 350",
+    year: 2022,
+    price: 165_000_000,
+    mileage: 15_000,
+    fuelType: "PETROL",
+    transmission: "AUTOMATIC",
+    driveType: "AWD",
+    condition: "USED",
+    color: "White",
+    seats: 5,
+    doors: 5,
+    engineSizeCc: 3000,
+    status: "RESERVED",
+  },
+  {
+    brand: "Mercedes-Benz",
+    bodyType: "Coupe",
+    title: "Mercedes-Benz E-Class Coupe",
+    year: 2020,
+    price: 110_000_000,
+    mileage: 41_000,
+    fuelType: "PETROL",
+    transmission: "AUTOMATIC",
+    driveType: "RWD",
+    condition: "USED",
+    color: "Red",
+    seats: 4,
+    doors: 2,
+    engineSizeCc: 2000,
+    status: "AVAILABLE",
+  },
+  {
+    brand: "BMW",
+    bodyType: "Sedan",
+    title: "BMW 320i M Sport",
+    year: 2021,
+    price: 92_000_000,
+    mileage: 26_000,
+    fuelType: "PETROL",
+    transmission: "AUTOMATIC",
+    driveType: "RWD",
+    condition: "USED",
+    color: "Alpine White",
+    seats: 5,
+    doors: 4,
+    engineSizeCc: 2000,
+    status: "AVAILABLE",
+  },
+  {
+    brand: "BMW",
+    bodyType: "SUV",
+    title: "BMW X5 xDrive40i",
+    year: 2022,
+    price: 178_000_000,
+    mileage: 18_500,
+    fuelType: "PETROL",
+    transmission: "AUTOMATIC",
+    driveType: "AWD",
+    condition: "USED",
+    color: "Black Sapphire",
+    seats: 5,
+    doors: 5,
+    engineSizeCc: 3000,
+    status: "AVAILABLE",
+    isFeatured: true,
+  },
+  {
+    brand: "Land Rover",
+    bodyType: "SUV",
+    title: "Range Rover Sport HSE",
+    year: 2021,
+    price: 210_000_000,
+    mileage: 29_000,
+    fuelType: "DIESEL",
+    transmission: "AUTOMATIC",
+    driveType: "FOUR_WD",
+    condition: "USED",
+    color: "Santorini Black",
+    seats: 5,
+    doors: 5,
+    engineSizeCc: 3000,
+    status: "SOLD",
+  },
+  {
+    brand: "Land Rover",
+    bodyType: "SUV",
+    title: "Land Rover Defender 110",
+    year: 2023,
+    price: 245_000_000,
+    mileage: 5_000,
+    fuelType: "DIESEL",
+    transmission: "AUTOMATIC",
+    driveType: "FOUR_WD",
+    condition: "IMPORTED",
+    color: "Pangea Green",
+    seats: 5,
+    doors: 5,
+    engineSizeCc: 3000,
+    status: "AVAILABLE",
+    isFeatured: true,
+  },
+  {
+    brand: "Nissan",
+    bodyType: "Hatchback",
+    title: "Nissan Note e-Power",
+    year: 2022,
+    price: 22_000_000,
+    mileage: 14_000,
+    fuelType: "HYBRID",
+    transmission: "CVT",
+    driveType: "FWD",
+    condition: "IMPORTED",
+    color: "Orange",
+    seats: 5,
+    doors: 5,
+    engineSizeCc: 1200,
+    status: "AVAILABLE",
+  },
+  {
+    brand: "Nissan",
+    bodyType: "SUV",
+    title: "Nissan X-Trail",
+    year: 2020,
+    price: 39_000_000,
+    mileage: 55_000,
+    fuelType: "PETROL",
+    transmission: "CVT",
+    driveType: "AWD",
+    condition: "USED",
+    color: "Grey",
+    seats: 7,
+    doors: 5,
+    engineSizeCc: 2000,
+    status: "AVAILABLE",
+  },
+  {
+    brand: "Ford",
+    bodyType: "Pickup",
+    title: "Ford Ranger Wildtrak",
+    year: 2021,
+    price: 51_000_000,
+    mileage: 38_000,
+    fuelType: "DIESEL",
+    transmission: "AUTOMATIC",
+    driveType: "FOUR_WD",
+    condition: "USED",
+    color: "Blue",
+    seats: 5,
+    doors: 4,
+    engineSizeCc: 2000,
+    status: "AVAILABLE",
+  },
+  {
+    brand: "Ford",
+    bodyType: "SUV",
+    title: "Ford Everest Titanium",
+    year: 2019,
+    price: 44_000_000,
+    mileage: 68_000,
+    fuelType: "DIESEL",
+    transmission: "AUTOMATIC",
+    driveType: "FOUR_WD",
+    condition: "USED",
+    color: "White",
+    seats: 7,
+    doors: 5,
+    engineSizeCc: 2000,
+    status: "ARCHIVED",
+  },
 ];
 
 const DEALERSHIPS = [
@@ -84,14 +322,53 @@ const DEALERSHIPS = [
   },
 ] as const;
 
-const POLICY_PAGES: Array<{ key: "PRIVACY" | "TERMS" | "COOKIE_POLICY" | "WARRANTY" | "RETURNS" | "FINANCING" | "ABOUT"; title: string; content: string }> = [
-  { key: "ABOUT", title: "About Us", content: "We are a family-run dealership with over a decade of experience sourcing and certifying quality vehicles for our community." },
-  { key: "PRIVACY", title: "Privacy Policy", content: "We collect only the contact details you provide when making an inquiry or reservation, and use them solely to respond to you and process your purchase." },
-  { key: "TERMS", title: "Terms of Service", content: "All vehicle listings are subject to availability. Prices are quoted in local currency and may be updated without notice until a deposit is paid." },
-  { key: "COOKIE_POLICY", title: "Cookie Policy", content: "We use essential cookies to keep your session and preferences working correctly across the site." },
-  { key: "WARRANTY", title: "Warranty Policy", content: "Vehicles sold as Certified Pre-Owned include a 3-month/5,000km mechanical warranty covering the engine and transmission." },
-  { key: "RETURNS", title: "Returns Policy", content: "Deposits are refundable in full if the vehicle fails our pre-collection inspection or if the dealership cancels the sale." },
-  { key: "FINANCING", title: "Financing", content: "We partner with local banks and SACCOs to help qualifying buyers arrange installment financing on vehicles over 10,000,000 UGX/KES." },
+const POLICY_PAGES: Array<{
+  key: "PRIVACY" | "TERMS" | "COOKIE_POLICY" | "WARRANTY" | "RETURNS" | "FINANCING" | "ABOUT";
+  title: string;
+  content: string;
+}> = [
+  {
+    key: "ABOUT",
+    title: "About Us",
+    content:
+      "We are a family-run dealership with over a decade of experience sourcing and certifying quality vehicles for our community.",
+  },
+  {
+    key: "PRIVACY",
+    title: "Privacy Policy",
+    content:
+      "We collect only the contact details you provide when making an inquiry or reservation, and use them solely to respond to you and process your purchase.",
+  },
+  {
+    key: "TERMS",
+    title: "Terms of Service",
+    content:
+      "All vehicle listings are subject to availability. Prices are quoted in local currency and may be updated without notice until a deposit is paid.",
+  },
+  {
+    key: "COOKIE_POLICY",
+    title: "Cookie Policy",
+    content:
+      "We use essential cookies to keep your session and preferences working correctly across the site.",
+  },
+  {
+    key: "WARRANTY",
+    title: "Warranty Policy",
+    content:
+      "Vehicles sold as Certified Pre-Owned include a 3-month/5,000km mechanical warranty covering the engine and transmission.",
+  },
+  {
+    key: "RETURNS",
+    title: "Returns Policy",
+    content:
+      "Deposits are refundable in full if the vehicle fails our pre-collection inspection or if the dealership cancels the sale.",
+  },
+  {
+    key: "FINANCING",
+    title: "Financing",
+    content:
+      "We partner with local banks and SACCOs to help qualifying buyers arrange installment financing on vehicles over 10,000,000 UGX/KES.",
+  },
 ];
 
 async function resetSeedData() {
@@ -245,9 +522,17 @@ async function seedDealership(config: (typeof DEALERSHIPS)[number], planId: stri
     vehicles.push(vehicle);
   }
 
-  const collections: Array<{ name: string; slug: string; predicate: (v: (typeof vehicles)[number]) => boolean }> = [
+  const collections: Array<{
+    name: string;
+    slug: string;
+    predicate: (v: (typeof vehicles)[number]) => boolean;
+  }> = [
     { name: "Luxury Collection", slug: "luxury", predicate: (v) => Number(v.price) >= 80_000_000 },
-    { name: "SUVs", slug: "suvs", predicate: (v) => v.bodyTypeId === bodyTypeBySlug.get("SUV")?.id },
+    {
+      name: "SUVs",
+      slug: "suvs",
+      predicate: (v) => v.bodyTypeId === bodyTypeBySlug.get("SUV")?.id,
+    },
     { name: "Best Deals", slug: "best-deals", predicate: (v) => v.status === "AVAILABLE" },
   ];
 
@@ -280,7 +565,12 @@ async function seedDealership(config: (typeof DEALERSHIPS)[number], planId: stri
     });
   }
 
-  const menuItems: Array<{ location: "HEADER" | "FOOTER"; label: string; url: string; order: number }> = [
+  const menuItems: Array<{
+    location: "HEADER" | "FOOTER";
+    label: string;
+    url: string;
+    order: number;
+  }> = [
     { location: "HEADER", label: "Inventory", url: "/inventory", order: 0 },
     { location: "HEADER", label: "About", url: "/about", order: 1 },
     { location: "HEADER", label: "Contact", url: "/contact", order: 2 },
@@ -378,7 +668,9 @@ async function seedDealership(config: (typeof DEALERSHIPS)[number], planId: stri
     });
   }
 
-  console.log(`Seeded ${dealership.name} (${dealership.slug}) — ${vehicles.length} vehicles, owner=${owner.email}`);
+  console.log(
+    `Seeded ${dealership.name} (${dealership.slug}) — ${vehicles.length} vehicles, owner=${owner.email}`,
+  );
 }
 
 async function main() {

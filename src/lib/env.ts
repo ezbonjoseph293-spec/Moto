@@ -37,6 +37,9 @@ export const envSchema = z.object({
   CLOUDINARY_API_SECRET: optionalEnvString(z.string().min(1)),
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: optionalEnvString(z.string().min(1)),
 
+  // Cron (Stage 4)
+  CRON_SECRET: optionalEnvString(z.string().min(1)),
+
   // Flutterwave (Stages 6 & 8)
   FLUTTERWAVE_PUBLIC_KEY: optionalEnvString(z.string().min(1)),
   FLUTTERWAVE_SECRET_KEY: optionalEnvString(z.string().min(1)),

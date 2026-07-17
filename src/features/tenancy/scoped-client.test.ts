@@ -64,7 +64,9 @@ function vehicleFixture(dealershipId: string, brandId: string, slug: string) {
 describe("tenant isolation", () => {
   it("never returns another tenant's rows from findMany", async () => {
     const dbA = forDealership(dealerA.id);
-    const vehicles = await dbA.vehicle.findMany({ where: { id: { in: [vehicleA.id, vehicleB.id] } } });
+    const vehicles = await dbA.vehicle.findMany({
+      where: { id: { in: [vehicleA.id, vehicleB.id] } },
+    });
 
     expect(vehicles).toHaveLength(1);
     expect(vehicles[0]?.id).toBe(vehicleA.id);
@@ -101,9 +103,9 @@ describe("tenant isolation", () => {
   it("throws when a query explicitly names a different tenant's dealershipId", async () => {
     const dbA = forDealership(dealerA.id);
 
-    await expect(
-      dbA.vehicle.findFirst({ where: { dealershipId: dealerB.id } }),
-    ).rejects.toThrow(TenancyViolationError);
+    await expect(dbA.vehicle.findFirst({ where: { dealershipId: dealerB.id } })).rejects.toThrow(
+      TenancyViolationError,
+    );
   });
 
   it("throws when creating a row with a mismatched dealershipId", async () => {

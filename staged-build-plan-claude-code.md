@@ -1,4 +1,5 @@
 # Staged Build Plan — Claude Code Task Prompts
+
 ### Multi-Dealer Car Platform, built one stage at a time
 
 ## How to use this file
@@ -8,7 +9,7 @@
 3. **Don't skip gates.** Stages 1 and 6 end with an explicit "stop and show me" checkpoint. Approving the schema and the payment design before code exists is what saves you from painful rewrites.
 4. **Commit discipline:** `git commit` at the end of every stage with the stage name. If a stage goes sideways, you can reset to the last good stage instead of untangling.
 
-Golden rule to include in every session if Claude drifts: *"Only build what this stage asks for. Do not scaffold future stages. No placeholders or TODOs — everything in this stage must fully work."*
+Golden rule to include in every session if Claude drifts: _"Only build what this stage asks for. Do not scaffold future stages. No placeholders or TODOs — everything in this stage must fully work."_
 
 ---
 
@@ -17,6 +18,7 @@ Golden rule to include in every session if Claude drifts: *"Only build what this
 > Read CLAUDE.md fully before doing anything. We are building the platform in strict stages; this session is **Stage 0: Project Foundation only**.
 >
 > Set up:
+>
 > 1. Next.js 15 (App Router) + TypeScript, strict mode, with a feature-based folder structure: `src/features/{inventory,auth,tenancy,payments,leads,settings}/`, `src/lib/`, `src/components/ui/`.
 > 2. Tailwind CSS + shadcn/ui, with the full design-token system from CLAUDE.md Section 5 implemented as CSS variables (ink, surface, `--brand` accent, status colors, radius, shadows) and Space Grotesk + Inter loaded via `next/font`.
 > 3. Prisma initialized against PostgreSQL, Docker Compose for local Postgres, `.env.example` with every variable we'll eventually need (DB, Auth.js, Cloudinary, Flutterwave, Africa's Talking, Resend) documented with comments.
@@ -81,6 +83,7 @@ Golden rule to include in every session if Claude drifts: *"Only build what this
 > Read CLAUDE.md. This session is **Stage 5: Storefront**.
 >
 > Build the buyer-facing storefront per CLAUDE.md Sections 3 and 5 (premium, mobile-first):
+>
 > 1. **Home:** hero (dealer-editable content from settings), featured vehicles, latest arrivals, collections row, why-choose-us, testimonials placeholder section (hidden if empty), logo strip, map, CTA banner, announcement bar.
 > 2. **Inventory:** SSR list with URL-driven filters (brand, price, year, mileage, fuel, transmission, body style, condition, color) + text search, sort options, pagination, filter chips on mobile / sidebar on desktop, skeleton loaders.
 > 3. **Vehicle details:** swipeable gallery, sticky mobile bar with price + "Reserve this car" button (button links to a stub `/reserve` page this stage — payment is Stage 6), spec table, features, brochure download, WhatsApp deep link + call button, share, related vehicles.

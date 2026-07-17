@@ -20,11 +20,15 @@ export default async function StorefrontHomePage({
         <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-brand/10 text-brand">
           <Car className="size-6" aria-hidden="true" />
         </div>
-        <h1 className="font-heading text-2xl font-bold text-ink">{dealerName}&apos;s storefront is ready</h1>
-        {setting?.tagline && <p className="mt-2 max-w-md text-muted-foreground">{setting.tagline}</p>}
+        <h1 className="font-heading text-2xl font-bold text-ink">
+          {dealerName}&apos;s storefront is ready
+        </h1>
+        {setting?.tagline && (
+          <p className="mt-2 max-w-md text-muted-foreground">{setting.tagline}</p>
+        )}
         <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-          Inventory, collections, and the reservation flow arrive in Stages 4–6. Branding and contact
-          details set in the dashboard already appear in the header and footer above.
+          Inventory, collections, and the reservation flow arrive in Stages 4–6. Branding and
+          contact details set in the dashboard already appear in the header and footer above.
         </p>
       </div>
     </main>

@@ -37,14 +37,14 @@ export function ForgotPasswordForm() {
             <Input id="email" name="email" type="email" autoComplete="email" required />
           </div>
 
-          {state.error && <p className="text-destructive text-sm">{state.error}</p>}
+          {state.error && <p className="text-sm text-destructive">{state.error}</p>}
 
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Sending…" : "Send reset link"}
           </Button>
         </form>
 
-        <p className="text-muted-foreground mt-6 text-center text-sm">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           <Link href="/login" className="text-primary underline underline-offset-4">
             Back to login
           </Link>

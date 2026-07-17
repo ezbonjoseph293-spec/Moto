@@ -61,7 +61,10 @@ export default async function StorefrontLayout({
 
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href={`/${dealerSlug}`} className="flex items-center gap-2 font-heading text-lg font-bold text-ink">
+          <Link
+            href={`/${dealerSlug}`}
+            className="flex items-center gap-2 font-heading text-lg font-bold text-ink"
+          >
             {setting?.logoLightUrl ? (
               <Image
                 src={setting.logoLightUrl}
@@ -97,7 +100,10 @@ export default async function StorefrontLayout({
 
             <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
               {setting?.phonePrimary && (
-                <a href={`tel:${setting.phonePrimary}`} className="flex items-center gap-2 hover:text-white">
+                <a
+                  href={`tel:${setting.phonePrimary}`}
+                  className="flex items-center gap-2 hover:text-white"
+                >
                   <Phone className="size-4" aria-hidden="true" /> {setting.phonePrimary}
                 </a>
               )}
@@ -131,17 +137,57 @@ export default async function StorefrontLayout({
 
             {(socials.facebook || socials.instagram || socials.twitter || socials.tiktok) && (
               <div className="flex gap-4 text-xs text-white/60">
-                {socials.facebook && <a href={socials.facebook} target="_blank" rel="noreferrer" className="hover:text-white">Facebook</a>}
-                {socials.instagram && <a href={socials.instagram} target="_blank" rel="noreferrer" className="hover:text-white">Instagram</a>}
-                {socials.twitter && <a href={socials.twitter} target="_blank" rel="noreferrer" className="hover:text-white">X / Twitter</a>}
-                {socials.tiktok && <a href={socials.tiktok} target="_blank" rel="noreferrer" className="hover:text-white">TikTok</a>}
+                {socials.facebook && (
+                  <a
+                    href={socials.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white"
+                  >
+                    Facebook
+                  </a>
+                )}
+                {socials.instagram && (
+                  <a
+                    href={socials.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white"
+                  >
+                    Instagram
+                  </a>
+                )}
+                {socials.twitter && (
+                  <a
+                    href={socials.twitter}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white"
+                  >
+                    X / Twitter
+                  </a>
+                )}
+                {socials.tiktok && (
+                  <a
+                    href={socials.tiktok}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-white"
+                  >
+                    TikTok
+                  </a>
+                )}
               </div>
             )}
 
             {footerLinks.length > 0 && (
               <nav className="flex flex-wrap gap-4 text-xs text-white/60">
                 {footerLinks.map((link) => (
-                  <Link key={link.id} href={`/${dealerSlug}${link.url}`} className="hover:text-white">
+                  <Link
+                    key={link.id}
+                    href={`/${dealerSlug}${link.url}`}
+                    className="hover:text-white"
+                  >
                     {link.label}
                   </Link>
                 ))}

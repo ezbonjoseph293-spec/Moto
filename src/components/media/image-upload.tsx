@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import type { UploadPurpose } from "./upload-purpose";
+
 type ImageUploadProps = {
   name: string;
   label: string;
-  purpose: "branding" | "favicon";
+  purpose: UploadPurpose;
   defaultValue?: string | null;
   hint?: string;
 };
@@ -62,10 +64,13 @@ export function ImageUpload({ name, label, purpose, defaultValue, hint }: ImageU
       form.append("signature", sig.signature);
       form.append("folder", sig.folder);
 
-      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
-        method: "POST",
-        body: form,
-      });
+      const uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: form,
+        },
+      );
 
       if (!uploadRes.ok) throw new Error("Upload to Cloudinary failed.");
 
@@ -86,7 +91,14 @@ export function ImageUpload({ name, label, purpose, defaultValue, hint }: ImageU
       <div className="flex items-center gap-3">
         <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
           {url ? (
-            <Image src={url} alt="" width={64} height={64} className="size-16 object-contain" unoptimized />
+            <Image
+              src={url}
+              alt=""
+              width={64}
+              height={64}
+              className="size-16 object-contain"
+              unoptimized
+            />
           ) : (
             <ImageIcon className="size-6 text-muted-foreground" aria-hidden="true" />
           )}
@@ -110,7 +122,9 @@ export function ImageUpload({ name, label, purpose, defaultValue, hint }: ImageU
               />
               <Button type="button" variant="outline" size="sm" disabled={isUploading} asChild>
                 <span>
-                  {isUploading ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+                  {isUploading ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  ) : null}
                   {isUploading ? "Uploading…" : "Upload image"}
                 </span>
               </Button>

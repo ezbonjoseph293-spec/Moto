@@ -45,7 +45,9 @@ export function OnboardingWizard({
               {i < step ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}
             </span>
             <span className={i === step ? "text-ink" : undefined}>{label}</span>
-            {i < STEPS.length - 1 && <span className="mx-1 h-px w-4 bg-border" aria-hidden="true" />}
+            {i < STEPS.length - 1 && (
+              <span className="mx-1 h-px w-4 bg-border" aria-hidden="true" />
+            )}
           </li>
         ))}
       </ol>
@@ -54,7 +56,8 @@ export function OnboardingWizard({
         <CardHeader>
           <CardTitle>{STEPS[step]}</CardTitle>
           <CardDescription>
-            {step === 0 && "Upload your logo and pick your brand color — this shapes your entire storefront."}
+            {step === 0 &&
+              "Upload your logo and pick your brand color — this shapes your entire storefront."}
             {step === 1 && "How buyers reach you and find your showroom."}
             {step === 2 && "How much buyers pay to reserve a car, and for how long."}
             {step === 3 && "You're ready to go live."}

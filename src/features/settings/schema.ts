@@ -4,7 +4,10 @@ const emptyToUndefined = (v: unknown) => (v === "" || v === undefined ? undefine
 const optionalString = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess(emptyToUndefined, schema.optional());
 const optionalNumber = (schema: z.ZodTypeAny) =>
-  z.preprocess((v) => (v === "" || v === undefined || v === null ? undefined : Number(v)), schema.optional());
+  z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? undefined : Number(v)),
+    schema.optional(),
+  );
 
 const hexColorSchema = z
   .string()

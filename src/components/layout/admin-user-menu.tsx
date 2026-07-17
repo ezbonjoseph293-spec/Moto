@@ -15,7 +15,7 @@ export function AdminUserMenu({ user }: { user: AuthenticatedUser }) {
     <div className="flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 sm:px-6">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-ink">{user.name}</p>
-        <p className="text-muted-foreground text-xs">{ROLE_LABEL[user.role]}</p>
+        <p className="text-xs text-muted-foreground">{ROLE_LABEL[user.role]}</p>
       </div>
       <form action={logoutAction}>
         <Button type="submit" variant="outline" size="sm">

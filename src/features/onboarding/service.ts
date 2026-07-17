@@ -5,9 +5,7 @@ import { recordAuditLog } from "@/lib/audit";
 import { sendVerificationEmail } from "@/features/auth/service";
 import type { StartOnboardingInput } from "./schema";
 
-export type CreateDealershipResult =
-  | { ok: true }
-  | { ok: false; error: string };
+export type CreateDealershipResult = { ok: true } | { ok: false; error: string };
 
 /**
  * Bootstraps a brand-new dealership: Dealership + a default Setting row +
@@ -16,7 +14,9 @@ export type CreateDealershipResult =
  * `forPlatform()`'s documented escape hatch where a dealershipId doesn't
  * exist yet — everything after this point goes through `forDealership()`.
  */
-export async function createDealership(input: StartOnboardingInput): Promise<CreateDealershipResult> {
+export async function createDealership(
+  input: StartOnboardingInput,
+): Promise<CreateDealershipResult> {
   const db = forPlatform();
   const email = input.email.toLowerCase();
 

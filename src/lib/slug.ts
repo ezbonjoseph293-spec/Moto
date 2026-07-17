@@ -26,3 +26,25 @@ export async function generateUniqueDealerSlug(name: string): Promise<string> {
 
   return candidate;
 }
+
+/**
+ * Generic version of the above for any dealer-scoped model (Vehicle, Brand,
+ * BodyType, Collection, ...): appends -2, -3, ... until `exists` reports no
+ * conflict. Callers pass a scoped existence check (e.g. excluding the
+ * current row's id on edit).
+ */
+export async function generateUniqueSlug(
+  name: string,
+  exists: (candidate: string) => Promise<boolean>,
+): Promise<string> {
+  const base = slugify(name) || "item";
+
+  let candidate = base;
+  let suffix = 2;
+  while (await exists(candidate)) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}

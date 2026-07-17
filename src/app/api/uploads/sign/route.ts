@@ -4,7 +4,16 @@ import { requireRole } from "@/features/auth/require-role";
 import { isCloudinaryConfigured, signCloudinaryUpload } from "@/lib/cloudinary";
 
 const bodySchema = z.object({
-  purpose: z.enum(["branding", "favicon"]),
+  purpose: z.enum([
+    "branding",
+    "favicon",
+    "vehicle-images",
+    "vehicle-videos",
+    "vehicle-documents",
+    "brands",
+    "body-types",
+    "collections",
+  ]),
 });
 
 /**

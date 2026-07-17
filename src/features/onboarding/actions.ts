@@ -32,7 +32,10 @@ export async function startOnboardingAction(
   const result = await onboardingService.createDealership(parsed.data);
   if (!result.ok) return result;
 
-  return { ok: true, message: "Check your email to verify your account, then log in to finish setup." };
+  return {
+    ok: true,
+    message: "Check your email to verify your account, then log in to finish setup.",
+  };
 }
 
 export async function completeOnboardingAction(): Promise<void> {

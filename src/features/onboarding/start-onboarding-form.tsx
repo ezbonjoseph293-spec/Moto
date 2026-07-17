@@ -28,13 +28,21 @@ export function StartOnboardingForm() {
     <Card>
       <CardHeader>
         <CardTitle>List your dealership on Moto</CardTitle>
-        <CardDescription>Get a premium storefront and deposit-ready inventory in minutes.</CardDescription>
+        <CardDescription>
+          Get a premium storefront and deposit-ready inventory in minutes.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="dealershipName">Dealership name</Label>
-            <Input id="dealershipName" name="dealershipName" type="text" required placeholder="Kampala Prestige Motors" />
+            <Input
+              id="dealershipName"
+              name="dealershipName"
+              type="text"
+              required
+              placeholder="Kampala Prestige Motors"
+            />
           </div>
 
           <div className="space-y-1.5">

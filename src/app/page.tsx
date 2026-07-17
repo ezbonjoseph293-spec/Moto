@@ -32,12 +32,12 @@ export default function MarketingHomePage() {
         <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase shadow-card">
           Stage 0 — Project Foundation
         </span>
-        <h1 className="font-heading max-w-3xl text-4xl font-bold text-balance sm:text-5xl">
+        <h1 className="max-w-3xl font-heading text-4xl font-bold text-balance sm:text-5xl">
           The premium platform for multi-dealer car retail
         </h1>
         <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
-          Every dealership gets a storefront that rivals Mercedes-Benz, Porsche, and Tesla — plus
-          a dashboard powerful enough to run their whole business from a phone.
+          Every dealership gets a storefront that rivals Mercedes-Benz, Porsche, and Tesla — plus a
+          dashboard powerful enough to run their whole business from a phone.
         </p>
       </div>
 

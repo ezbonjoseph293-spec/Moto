@@ -33,7 +33,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-muted-foreground text-xs underline underline-offset-4 hover:text-ink"
+                className="text-xs text-muted-foreground underline underline-offset-4 hover:text-ink"
               >
                 Forgot password?
               </Link>
@@ -47,14 +47,14 @@ export function LoginForm({ callbackUrl }: { callbackUrl?: string }) {
             />
           </div>
 
-          {state.error && <p className="text-destructive text-sm">{state.error}</p>}
+          {state.error && <p className="text-sm text-destructive">{state.error}</p>}
 
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? "Logging in…" : "Log in"}
           </Button>
         </form>
 
-        <p className="text-muted-foreground mt-6 text-center text-sm">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           New here?{" "}
           <Link href="/signup" className="text-primary underline underline-offset-4">
             Create an account

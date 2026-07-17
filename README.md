@@ -41,18 +41,18 @@ Seeded login (all roles): password `Password123!` — e.g.
 
 ## Scripts
 
-| Script                 | What it does                                    |
-| ---------------------- | ------------------------------------------------ |
-| `npm run dev`          | Start the dev server                              |
-| `npm run build`        | Production build                                  |
-| `npm run lint`         | ESLint                                            |
-| `npm run typecheck`    | TypeScript, no emit                               |
-| `npm run test`         | Vitest, single run                                |
-| `npm run format`       | Prettier write                                    |
-| `npm run db:migrate`   | Create/apply a Prisma migration (dev)             |
-| `npm run db:deploy`    | Apply existing migrations (CI/production)         |
-| `npm run db:studio`    | Open Prisma Studio                                |
-| `npm run seed`         | Wipe and reseed 2 demo dealerships                |
+| Script               | What it does                              |
+| -------------------- | ----------------------------------------- |
+| `npm run dev`        | Start the dev server                      |
+| `npm run build`      | Production build                          |
+| `npm run lint`       | ESLint                                    |
+| `npm run typecheck`  | TypeScript, no emit                       |
+| `npm run test`       | Vitest, single run                        |
+| `npm run format`     | Prettier write                            |
+| `npm run db:migrate` | Create/apply a Prisma migration (dev)     |
+| `npm run db:deploy`  | Apply existing migrations (CI/production) |
+| `npm run db:studio`  | Open Prisma Studio                        |
+| `npm run seed`       | Wipe and reseed 2 demo dealerships        |
 
 ## Structure
 

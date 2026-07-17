@@ -155,4 +155,85 @@ local Postgres. No database models yet.
   webhook-heavy stages ahead (6, 8) are where new integration test coverage
   matters most.
 
-**Next:** Stage 4 — Inventory Management.
+## Stage 4 — Inventory Management ✅
+
+- **`src/features/inventory/`** — the full vehicle CRUD module, following the
+  Stage 3 settings conventions: Zod schemas (`schema.ts`), a service layer
+  over `forDealership()` that audit-logs every mutation (`service.ts`), and
+  role-gated Server Actions (`actions.ts`). Vehicle/media create/update/delete
+  is open to `OWNER`/`MANAGER`/`SALES` (a salesperson can list a car from
+  their phone); brands, body types, collections, bulk actions, and CSV
+  import/export are `OWNER`/`MANAGER` only.
+- **State machine**: `VEHICLE_STATUS_TRANSITIONS` in `schema.ts` is the single
+  source of truth for legal `DRAFT → AVAILABLE → RESERVED → SOLD (+ ARCHIVED
+  / HIDDEN)` moves. `transitionVehicleStatus()` validates against it and
+  audit-logs every change (`vehicle.status.<from>_to_<to>`); `RESERVED` is
+  deliberately unreachable from the admin UI — the transitions list filters
+  it out everywhere it's rendered, since only the Stage 6 payment webhook may
+  set it.
+- **Media**: multi-image upload with drag-to-reorder (`@dnd-kit`) and cover
+  selection (`vehicle-image-manager.tsx`), video-by-URL, and PDF brochure
+  upload (`vehicle-document-manager.tsx`, Cloudinary `resource_type=raw`) —
+  all direct-to-Cloudinary via a shared `uploadToCloudinary()` client helper
+  (`src/components/media/upload-file.ts`) built on the Stage 3 signing route,
+  which now issues signatures for 6 more purposes (`vehicle-images`,
+  `vehicle-videos`, `vehicle-documents`, `brands`, `body-types`,
+  `collections`) alongside the original `branding`/`favicon`.
+- **Brands & body types**: CRUD with logo/icon upload, manual reordering
+  (same swap-order pattern as Stage 3 menus), delete blocked while any
+  vehicle still references the row.
+- **Collections**: `MANUAL` (pick vehicles via `CollectionMembershipManager`)
+  and `RULE_BASED` (an AND-only rule builder over price/year/mileage/
+  condition/brand/body type/status, serialized to `Collection.ruleConfig`
+  JSON). Rule-based membership is evaluated **live** on every read
+  (`getCollectionVehicles()` → `ruleConfigToWhere()`) rather than
+  materialized into `CollectionVehicle` rows, so it can never go stale —
+  Stage 5's storefront will call the same function.
+- **Bulk actions**: multi-select table (`vehicle-table.tsx`) with status
+  change, delete, and pricing (set / ±% ) — each bulk op writes one summary
+  AuditLog entry plus the normal per-vehicle transition logs.
+- **CSV import/export** (`papaparse`): export includes every spec field with
+  brand/body-type names resolved; import validates row-by-row against
+  `csvVehicleRowSchema`, resolves brand/body-type by case-insensitive name
+  match, and returns a `{ imported, errors: [{row, message}] }` report —
+  good rows commit even when others fail.
+- **Scheduled publishing**: `Vehicle.publishAt` (already in the Stage 1
+  schema) is honored by `publishScheduledVehicles()`, run for every
+  dealership by a new Vercel Cron target, `GET /api/cron/publish-scheduled`
+  (`vercel.json`, every 15 minutes), guarded by a `CRON_SECRET` bearer token
+  that's optional in local dev so the feature is testable without
+  provisioning one. This is the project's first background job — the
+  `src/lib` job infrastructure CLAUDE.md describes for Stages 6/8 (expiry,
+  dunning) can follow the same pattern.
+- **Admin UI**: `/admin/inventory` (searchable/filterable/paginated vehicle
+  table), `/admin/inventory/new` and `/admin/inventory/{id}` (create/edit +
+  media managers + status control + duplicate/delete),
+  `/admin/inventory/brands` (brands + body types side by side), and
+  `/admin/inventory/collections` (+ `/new`, `/{id}`) — tied together by an
+  `InventorySubNav` in-page tab strip (Vehicles / Brands & body types /
+  Collections) rather than a new top-level sidebar entry, since the existing
+  `adminNavItems` sidebar is a flat single-level list.
+- Added shadcn/ui primitives needed for CRUD UI (`table`, `dialog`,
+  `dropdown-menu`, `checkbox`, `pagination`, `alert-dialog`, `popover`,
+  `command`, `separator`) — installed via the shadcn CLI, `button.tsx`
+  reverted back to the Stage 0 hand-customized version afterward (the CLI's
+  default overwrite has no `inverse` variant, which `platform/layout.tsx`
+  depends on) — and new dependencies `@dnd-kit/{core,sortable,utilities}`
+  (image reordering) and `papaparse` (CSV).
+- Verified end-to-end against the seeded database: logged in as a seeded
+  `OWNER` and confirmed `/admin/inventory`, `/admin/inventory/brands`,
+  `/admin/inventory/collections`, a vehicle edit page, and a collection
+  detail page all render real seeded data (200s, correct content). Ran a
+  scripted smoke test through the service layer directly — create → DRAFT,
+  transition to AVAILABLE, add an image (auto-cover), duplicate, bulk status
+  to SOLD, confirmed an illegal `SOLD → AVAILABLE` transition throws, CSV
+  export, cleanup — all passed.
+- 40 existing tests still green; `lint`, `typecheck`, and `next build` all
+  clean. No new automated tests added this stage — same rationale as Stage
+  3, this is CRUD/UI work over the already-tested tenancy and audit
+  primitives; the state-machine has an admin-facing guard now but its
+  security-critical counterpart (the payment webhook that sets `RESERVED`)
+  lands in Stage 6, which is where integration tests for the full state
+  machine belong.
+
+**Next:** Stage 5 — Public Storefront.

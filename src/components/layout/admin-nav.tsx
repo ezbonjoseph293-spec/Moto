@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Car,
-  Inbox,
-  LayoutDashboard,
-  Settings,
-  Wallet,
-} from "lucide-react";
+import { Car, Inbox, LayoutDashboard, Settings, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -38,7 +32,7 @@ export function AdminSidebar() {
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card px-3 py-6 sm:flex">
-      <Link href="/admin" className="font-heading px-3 pb-6 text-lg font-bold text-ink">
+      <Link href="/admin" className="px-3 pb-6 font-heading text-lg font-bold text-ink">
         Moto Admin
       </Link>
       <nav className="flex flex-col gap-1">

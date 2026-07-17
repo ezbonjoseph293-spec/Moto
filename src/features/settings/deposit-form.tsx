@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { updateDepositAction, type FormState } from "./actions";
 
 const initialState: FormState = { ok: false };
@@ -25,7 +31,11 @@ export function DepositForm({ setting, onSaved }: { setting: Setting; onSaved?: 
     <form action={formAction} className="max-w-xl space-y-6">
       <div className="space-y-1.5">
         <Label htmlFor="depositType">Deposit type</Label>
-        <Select name="depositType" defaultValue={setting.depositType} onValueChange={setDepositType}>
+        <Select
+          name="depositType"
+          defaultValue={setting.depositType}
+          onValueChange={setDepositType}
+        >
           <SelectTrigger id="depositType">
             <SelectValue />
           </SelectTrigger>
@@ -93,7 +103,9 @@ export function DepositForm({ setting, onSaved }: { setting: Setting; onSaved?: 
       </div>
 
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
-      {state.ok && state.message && <p className="text-sm text-status-available">{state.message}</p>}
+      {state.ok && state.message && (
+        <p className="text-status-available text-sm">{state.message}</p>
+      )}
 
       <Button type="submit" disabled={isPending}>
         {isPending ? "Saving…" : "Save deposit policy"}

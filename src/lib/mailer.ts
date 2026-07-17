@@ -19,7 +19,10 @@ export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<
   const env = getEnv();
 
   if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
-    logger.info({ to, subject, html }, "[dev-mailer] RESEND_API_KEY not set — logging email instead of sending");
+    logger.info(
+      { to, subject, html },
+      "[dev-mailer] RESEND_API_KEY not set — logging email instead of sending",
+    );
     return;
   }
 

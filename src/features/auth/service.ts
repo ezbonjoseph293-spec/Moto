@@ -171,7 +171,10 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
 export type ResetPasswordResult = "reset" | "invalid-or-expired";
 
-export async function resetPassword(token: string, newPassword: string): Promise<ResetPasswordResult> {
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<ResetPasswordResult> {
   const db = forPlatform();
   const record = await db.passwordResetToken.findUnique({ where: { token } });
   if (!record || record.usedAt || record.expiresAt < new Date()) return "invalid-or-expired";

@@ -1,4 +1,5 @@
 # MASTER PROMPT — Elite Multi-Dealer Car Platform
+
 ### Merged build prompt: enterprise polish + your product decisions (multi-tenant, deposits, African payments)
 
 Copy everything below the line into your AI coding tool. Placeholders are in [brackets].
@@ -53,9 +54,11 @@ Chosen deliberately over a Vite SPA + separate Express API because: (a) car deta
 Build **Phase 1 completely and deeply** before touching Phase 2. A working, polished core beats a wide shallow shell.
 
 ### Phase 1 — Sellable MVP
+
 Multi-tenancy + dealer onboarding wizard; full inventory management; premium storefront (home, inventory, vehicle details, collections, financing, about/contact, policies, 404); deposit/reservation flow end-to-end; leads inbox; branding & website settings; team roles; subscriptions; platform admin; SEO fundamentals; seed data.
 
 ### Phase 2 — Growth Suite
+
 Blog CMS, testimonials, FAQ manager, homepage drag-and-drop builder, customer accounts (favorites, saved searches, alerts), trade-in and finance-application workflows, appointments/test-drive calendar, service bookings, marketing suite (newsletter, campaigns, popups, coupons, referral codes), analytics dashboards, media-library extras, 2FA + IP restrictions, multi-branch support per dealership, i18n + multi-currency, AI-powered similar-vehicle recommendations, instant search with autocomplete, live chat, custom domains, cross-dealer marketplace homepage.
 
 Architect Phase 1 so every Phase 2 module can be added without refactoring (modular, feature-based folder organization).

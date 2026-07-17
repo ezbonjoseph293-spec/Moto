@@ -75,19 +75,34 @@ function MenuList({ items, location }: { items: Menu[]; location: "HEADER" | "FO
         </ul>
       )}
 
-      <form action={formAction} className="flex flex-wrap items-end gap-2 border-t border-border pt-3">
+      <form
+        action={formAction}
+        className="flex flex-wrap items-end gap-2 border-t border-border pt-3"
+      >
         <input type="hidden" name="location" value={location} />
         <div className="min-w-32 flex-1 space-y-1">
           <Label htmlFor={`${location}-label`} className="text-xs">
             Label
           </Label>
-          <Input id={`${location}-label`} name="label" placeholder="Inventory" required maxLength={60} />
+          <Input
+            id={`${location}-label`}
+            name="label"
+            placeholder="Inventory"
+            required
+            maxLength={60}
+          />
         </div>
         <div className="min-w-40 flex-1 space-y-1">
           <Label htmlFor={`${location}-url`} className="text-xs">
             URL
           </Label>
-          <Input id={`${location}-url`} name="url" placeholder="/inventory" required maxLength={300} />
+          <Input
+            id={`${location}-url`}
+            name="url"
+            placeholder="/inventory"
+            required
+            maxLength={300}
+          />
         </div>
         <Button type="submit" variant="outline" size="sm" disabled={isPending}>
           {isPending ? "Adding…" : "Add link"}

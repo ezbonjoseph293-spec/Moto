@@ -45,7 +45,9 @@ export function AnnouncementForm({ setting }: { setting: Setting }) {
       </div>
 
       {state.error && <p className="text-sm text-destructive">{state.error}</p>}
-      {state.ok && state.message && <p className="text-sm text-status-available">{state.message}</p>}
+      {state.ok && state.message && (
+        <p className="text-status-available text-sm">{state.message}</p>
+      )}
 
       <Button type="submit" disabled={isPending}>
         {isPending ? "Saving…" : "Save announcement bar"}
