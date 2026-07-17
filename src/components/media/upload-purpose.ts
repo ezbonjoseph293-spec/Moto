@@ -7,4 +7,5 @@ export type UploadPurpose =
   | "vehicle-documents"
   | "brands"
   | "body-types"
-  | "collections";
+  | "collections"
+  | "testimonials";

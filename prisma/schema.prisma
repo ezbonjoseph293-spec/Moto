@@ -139,6 +139,13 @@ enum LeadStatus {
   LOST
 }
 
+enum StaffInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
 enum BlogStatus {
   DRAFT
   PUBLISHED
@@ -264,6 +271,7 @@ model Dealership {
   paymentTxns      PaymentTransaction[]
   leads            Lead[]
   leadNotes        LeadNote[]
+  staffInvites     StaffInvite[]
   testimonials     Testimonial[]
   blogCategories   BlogCategory[]
   blogPosts        BlogPost[]
@@ -376,6 +384,7 @@ model User {
   refreshTokens        RefreshToken[]
   assignedLeads        Lead[]               @relation("LeadAssignee")
   leadNotes            LeadNote[]
+  sentInvites          StaffInvite[]        @relation("StaffInviteSender")
   favorites            Favorite[]
   blogPosts            BlogPost[]
   auditLogs            AuditLog[]
@@ -743,6 +752,30 @@ model LeadNote {
   @@index([leadId])
 }
 
+/// Team invite: an OWNER invites a MANAGER/SALES by email; the recipient sets
+/// their own password on accept. No password exists (and no User row) until
+/// accepted.
+model StaffInvite {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  invitedById  String
+  invitedBy    User       @relation("StaffInviteSender", fields: [invitedById], references: [id])
+
+  email  String
+  role   UserRole
+  token  String            @unique
+  status StaffInviteStatus @default(PENDING)
+
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+}
+
 // ============================================================================
 // Testimonials, Blog, Pages, Menus
 // ============================================================================
@@ -890,6 +923,10 @@ model Setting {
   depositPercentage  Decimal? @db.Decimal(5, 2)
   depositHoldHours   Int      @default(48)
   refundPolicyText   String?  @db.Text
+
+  // Lead notification preferences
+  notifyNewLeadEmail Boolean @default(true)
+  notifyNewLeadSms   Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

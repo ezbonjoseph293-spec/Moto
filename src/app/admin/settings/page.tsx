@@ -1,5 +1,5 @@
 import { requireRole } from "@/features/auth/require-role";
-import { getSettings, listMenuItems } from "@/features/settings/service";
+import { getSettings, listMenuItems, listTestimonials } from "@/features/settings/service";
 import { SettingsTabs } from "@/features/settings/settings-tabs";
 
 export const metadata = { title: "Settings" };
@@ -10,9 +10,10 @@ export default async function AdminSettingsPage() {
     throw new Error("This account has no dealership.");
   }
 
-  const [setting, menus] = await Promise.all([
+  const [setting, menus, testimonials] = await Promise.all([
     getSettings(user.dealershipId),
     listMenuItems(user.dealershipId),
+    listTestimonials(user.dealershipId),
   ]);
 
   return (
@@ -24,7 +25,13 @@ export default async function AdminSettingsPage() {
         </p>
       </div>
 
-      <SettingsTabs setting={setting} headerMenu={menus.header} footerMenu={menus.footer} />
+      <SettingsTabs
+        setting={setting}
+        headerMenu={menus.header}
+        footerMenu={menus.footer}
+        testimonials={testimonials}
+        role={user.role}
+      />
     </div>
   );
 }

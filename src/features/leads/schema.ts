@@ -24,3 +24,35 @@ export const vehicleInquirySchema = z.object({
   message: optionalString(z.string().trim().max(2000)),
 });
 export type VehicleInquiryInput = z.infer<typeof vehicleInquirySchema>;
+
+export const leadSourceValues = [
+  "VEHICLE_INQUIRY",
+  "CONTACT_FORM",
+  "DEPOSIT",
+  "TRADE_IN",
+  "FINANCE_APPLICATION",
+  "TEST_DRIVE",
+  "NEWSLETTER",
+  "OTHER",
+] as const;
+
+/** Admin: change a lead's status (New → Contacted → Closed, etc). */
+export const updateLeadStatusSchema = z.object({
+  leadId: z.string().min(1),
+  status: z.enum(leadStatusValues),
+});
+export type UpdateLeadStatusInput = z.infer<typeof updateLeadStatusSchema>;
+
+/** Admin: assign or unassign a lead to a staff member. */
+export const assignLeadSchema = z.object({
+  leadId: z.string().min(1),
+  assignedToId: optionalString(z.string().min(1)),
+});
+export type AssignLeadInput = z.infer<typeof assignLeadSchema>;
+
+/** Admin: add a follow-up note to a lead. */
+export const leadNoteSchema = z.object({
+  leadId: z.string().min(1),
+  note: z.string().trim().min(1, "Add a note.").max(2000),
+});
+export type LeadNoteInput = z.infer<typeof leadNoteSchema>;

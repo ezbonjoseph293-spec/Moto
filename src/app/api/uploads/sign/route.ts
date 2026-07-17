@@ -13,6 +13,7 @@ const bodySchema = z.object({
     "brands",
     "body-types",
     "collections",
+    "testimonials",
   ]),
 });
 

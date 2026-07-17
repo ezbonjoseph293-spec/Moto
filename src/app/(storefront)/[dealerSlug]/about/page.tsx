@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { getDealerBySlug, getPageByKey } from "@/features/storefront/service";
+import { MarkdownContent } from "@/components/content/markdown-content";
 import { dealerUrl } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -40,10 +41,14 @@ export default async function AboutPage({
       <h1 className="font-heading text-2xl font-bold text-ink sm:text-3xl">
         {page?.title || `About ${name}`}
       </h1>
-      <div className="mt-6 text-sm leading-relaxed whitespace-pre-line text-ink/80 sm:text-base">
-        {page?.content ||
-          dealer.setting?.tagline ||
-          `${name} is committed to helping you find the right vehicle at a fair price.`}
+      <div className="mt-6">
+        <MarkdownContent
+          content={
+            page?.content ||
+            dealer.setting?.tagline ||
+            `${name} is committed to helping you find the right vehicle at a fair price.`
+          }
+        />
       </div>
     </main>
   );

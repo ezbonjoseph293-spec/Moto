@@ -24,6 +24,7 @@ export const DEALER_OWNED_MODELS = [
   "PaymentTransaction",
   "Lead",
   "LeadNote",
+  "StaffInvite",
   "Testimonial",
   "BlogCategory",
   "BlogPost",

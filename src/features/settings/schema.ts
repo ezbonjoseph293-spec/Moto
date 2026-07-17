@@ -103,6 +103,46 @@ export type AnnouncementInput = z.infer<typeof announcementSchema>;
 
 export const menuLocationValues = ["HEADER", "FOOTER"] as const;
 
+export const notificationsSchema = z.object({
+  notifyNewLeadEmail: z
+    .union([z.literal("on"), z.literal("true"), z.undefined()])
+    .transform((v) => v === "on" || v === "true"),
+  notifyNewLeadSms: z
+    .union([z.literal("on"), z.literal("true"), z.undefined()])
+    .transform((v) => v === "on" || v === "true"),
+});
+export type NotificationsInput = z.infer<typeof notificationsSchema>;
+
+export const pageKeyValues = [
+  "ABOUT",
+  "PRIVACY",
+  "TERMS",
+  "COOKIE_POLICY",
+  "WARRANTY",
+  "RETURNS",
+  "FINANCING",
+] as const;
+
+export const pageContentSchema = z.object({
+  pageId: z.string().min(1),
+  title: z.string().trim().min(2, "Title is too short.").max(160),
+  content: z.string().trim().min(10, "Add some content.").max(20_000),
+  seoTitle: optionalString(z.string().trim().max(160)),
+  seoDescription: optionalString(z.string().trim().max(300)),
+});
+export type PageContentInput = z.infer<typeof pageContentSchema>;
+
+export const testimonialSchema = z.object({
+  customerName: z.string().trim().min(2, "Name is too short.").max(120),
+  customerPhoto: optionalString(z.string().trim().url("Enter a valid URL.")),
+  rating: z.coerce.number().int().min(1).max(5),
+  message: z.string().trim().min(5, "Add a short message.").max(2000),
+  isFeatured: z
+    .union([z.literal("on"), z.literal("true"), z.undefined()])
+    .transform((v) => v === "on" || v === "true"),
+});
+export type TestimonialInput = z.infer<typeof testimonialSchema>;
+
 export const menuItemSchema = z.object({
   location: z.enum(menuLocationValues),
   label: z.string().trim().min(1, "Label is required.").max(60),

@@ -6,11 +6,161 @@ import type {
   DepositInput,
   IdentityInput,
   MenuItemInput,
+  NotificationsInput,
+  PageContentInput,
+  TestimonialInput,
 } from "./schema";
 
 export async function getSettings(dealershipId: string) {
   const db = forDealership(dealershipId);
   return db.setting.findUniqueOrThrow({ where: { dealershipId } });
+}
+
+// ============================================================================
+// Pages & policies
+// ============================================================================
+
+export async function listPages(dealershipId: string) {
+  const db = forDealership(dealershipId);
+  return db.page.findMany({ where: { dealershipId }, orderBy: { key: "asc" } });
+}
+
+export async function getPage(dealershipId: string, id: string) {
+  const db = forDealership(dealershipId);
+  return db.page.findUnique({ where: { id } });
+}
+
+export async function getPageHistory(dealershipId: string, pageId: string) {
+  const db = forDealership(dealershipId);
+  return db.auditLog.findMany({
+    where: { dealershipId, entityType: "Page", entityId: pageId },
+    orderBy: { createdAt: "desc" },
+    include: { actor: { select: { name: true } } },
+  });
+}
+
+export async function updatePageContent(
+  dealershipId: string,
+  actorId: string,
+  input: PageContentInput,
+) {
+  const db = forDealership(dealershipId);
+  const before = await db.page.findUniqueOrThrow({ where: { id: input.pageId } });
+
+  const page = await db.page.update({
+    where: { id: input.pageId },
+    data: {
+      title: input.title,
+      content: input.content,
+      seoTitle: input.seoTitle ?? null,
+      seoDescription: input.seoDescription ?? null,
+    },
+  });
+
+  await recordAuditLog({
+    dealershipId,
+    actorId,
+    action: "page.updated",
+    entityType: "Page",
+    entityId: page.id,
+    before: { title: before.title, content: before.content },
+    after: { title: page.title, content: page.content },
+  });
+
+  return page;
+}
+
+// ============================================================================
+// Testimonials
+// ============================================================================
+
+export async function listTestimonials(dealershipId: string) {
+  const db = forDealership(dealershipId);
+  return db.testimonial.findMany({ where: { dealershipId }, orderBy: { order: "asc" } });
+}
+
+export async function createTestimonial(
+  dealershipId: string,
+  actorId: string,
+  input: TestimonialInput,
+) {
+  const db = forDealership(dealershipId);
+  const maxOrder = await db.testimonial.aggregate({
+    where: { dealershipId },
+    _max: { order: true },
+  });
+
+  const testimonial = await db.testimonial.create({
+    data: {
+      dealershipId,
+      customerName: input.customerName,
+      customerPhoto: input.customerPhoto ?? null,
+      rating: input.rating,
+      message: input.message,
+      isFeatured: input.isFeatured,
+      order: (maxOrder._max.order ?? -1) + 1,
+    },
+  });
+
+  await recordAuditLog({
+    dealershipId,
+    actorId,
+    action: "testimonial.created",
+    entityType: "Testimonial",
+    entityId: testimonial.id,
+    after: testimonial,
+  });
+
+  return testimonial;
+}
+
+export async function updateTestimonial(
+  dealershipId: string,
+  actorId: string,
+  id: string,
+  input: TestimonialInput,
+) {
+  const db = forDealership(dealershipId);
+  const before = await db.testimonial.findUniqueOrThrow({ where: { id } });
+
+  const testimonial = await db.testimonial.update({
+    where: { id },
+    data: {
+      customerName: input.customerName,
+      customerPhoto: input.customerPhoto ?? null,
+      rating: input.rating,
+      message: input.message,
+      isFeatured: input.isFeatured,
+    },
+  });
+
+  await recordAuditLog({
+    dealershipId,
+    actorId,
+    action: "testimonial.updated",
+    entityType: "Testimonial",
+    entityId: testimonial.id,
+    before,
+    after: testimonial,
+  });
+
+  return testimonial;
+}
+
+export async function deleteTestimonial(dealershipId: string, actorId: string, id: string) {
+  const db = forDealership(dealershipId);
+  const before = await db.testimonial.findUniqueOrThrow({ where: { id } });
+
+  await db.testimonial.delete({ where: { id } });
+
+  await recordAuditLog({
+    dealershipId,
+    actorId,
+    action: "testimonial.deleted",
+    entityType: "Testimonial",
+    entityId: id,
+    before,
+  });
 }
 
 export async function updateIdentity(dealershipId: string, actorId: string, input: IdentityInput) {
@@ -134,6 +284,35 @@ export async function updateAnnouncement(
     entityId: setting.id,
     before,
     after: setting,
+  });
+
+  return setting;
+}
+
+export async function updateNotifications(
+  dealershipId: string,
+  actorId: string,
+  input: NotificationsInput,
+) {
+  const db = forDealership(dealershipId);
+  const before = await db.setting.findUniqueOrThrow({ where: { dealershipId } });
+
+  const setting = await db.setting.update({
+    where: { dealershipId },
+    data: {
+      notifyNewLeadEmail: input.notifyNewLeadEmail,
+      notifyNewLeadSms: input.notifyNewLeadSms,
+    },
+  });
+
+  await recordAuditLog({
+    dealershipId,
+    actorId,
+    action: "settings.notifications.updated",
+    entityType: "Setting",
+    entityId: setting.id,
+    before: { notifyNewLeadEmail: before.notifyNewLeadEmail, notifyNewLeadSms: before.notifyNewLeadSms },
+    after: { notifyNewLeadEmail: setting.notifyNewLeadEmail, notifyNewLeadSms: setting.notifyNewLeadSms },
   });
 
   return setting;

@@ -9,6 +9,9 @@ import {
   depositSchema,
   identitySchema,
   menuItemSchema,
+  notificationsSchema,
+  pageContentSchema,
+  testimonialSchema,
 } from "./schema";
 
 export type FormState = { ok: boolean; error?: string; message?: string };
@@ -90,6 +93,22 @@ export async function updateAnnouncementAction(
   return { ok: true, message: "Announcement bar saved." };
 }
 
+export async function updateNotificationsAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireDealershipStaff();
+  const parsed = notificationsSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await settingsService.updateNotifications(user.dealershipId, user.id, parsed.data);
+  revalidatePath("/admin/settings");
+
+  return { ok: true, message: "Notification preferences saved." };
+}
+
 export async function createMenuItemAction(
   _prevState: FormState,
   formData: FormData,
@@ -119,4 +138,65 @@ export async function moveMenuItemAction(id: string, direction: "up" | "down"): 
   await settingsService.moveMenuItem(user.dealershipId, user.id, id, direction);
   revalidatePath("/admin/settings");
   revalidatePath("/[dealerSlug]", "layout");
+}
+
+export async function updatePageContentAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireDealershipStaff();
+  const parsed = pageContentSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await settingsService.updatePageContent(user.dealershipId, user.id, parsed.data);
+  revalidatePath("/admin/settings/pages");
+  revalidatePath(`/admin/settings/pages/${parsed.data.pageId}`);
+  revalidatePath("/[dealerSlug]/[slug]", "page");
+  revalidatePath("/[dealerSlug]/about", "page");
+
+  return { ok: true, message: "Page saved." };
+}
+
+export async function createTestimonialAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireDealershipStaff();
+  const parsed = testimonialSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await settingsService.createTestimonial(user.dealershipId, user.id, parsed.data);
+  revalidatePath("/admin/settings");
+  revalidatePath("/[dealerSlug]", "page");
+
+  return { ok: true, message: "Testimonial added." };
+}
+
+export async function updateTestimonialAction(
+  id: string,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireDealershipStaff();
+  const parsed = testimonialSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await settingsService.updateTestimonial(user.dealershipId, user.id, id, parsed.data);
+  revalidatePath("/admin/settings");
+  revalidatePath("/[dealerSlug]", "page");
+
+  return { ok: true, message: "Testimonial updated." };
+}
+
+export async function deleteTestimonialAction(id: string): Promise<void> {
+  const user = await requireDealershipStaff();
+  await settingsService.deleteTestimonial(user.dealershipId, user.id, id);
+  revalidatePath("/admin/settings");
+  revalidatePath("/[dealerSlug]", "page");
 }

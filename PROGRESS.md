@@ -446,4 +446,84 @@ mode) was presented and approved before any code was written, per the Stage
   dev-logged the confirmation — then cleaned up. `lint`, `typecheck`, and
   `next build` are all clean.
 
-**Next:** Stage 7 — Leads Inbox & Content.
+## Stage 7 — Leads Inbox & Content ✅
+
+- **Schema**: `StaffInvite` model (email/role/token/expiry/status, added to
+  `DEALER_OWNED_MODELS` so `forDealership()` scopes it like every other
+  dealer table) and two notification-preference booleans on `Setting`
+  (`notifyNewLeadEmail`, `notifyNewLeadSms`).
+- **Leads inbox finished** (`src/features/leads/`, was a Stage 5 stub for
+  writes only): `listLeads`/`getLead` (search/status/source/assignee
+  filters, pagination), `updateLeadStatus`/`assignLead`/`addLeadNote`
+  (all audit-logged), `listAssignableStaff`. `createContactLead`/
+  `createVehicleInquiryLead` now call `notifyDealerOfNewLead()` — a
+  `Notification` row always, plus email/SMS to the dealer's `Setting.email`/
+  `phonePrimary` gated by the two new preference booleans; wrapped so a
+  notification failure can never break lead creation itself.
+  `/admin/leads` (status-tab list, matching the Stage 6 deposits page
+  pattern, plus source/assignee filters) and `/admin/leads/[id]` (status
+  select, assignee select, notes timeline) replace the stub.
+- **Pages & policies**: added Markdown rendering
+  (`src/components/content/markdown-content.tsx`, `react-markdown` — never
+  renders raw HTML, so dealer-authored content can't inject script tags) and
+  swapped it in on the two storefront routes that previously rendered
+  `Page.content` as plain `whitespace-pre-line` text (`/about`, the policy
+  catch-all `/[slug]`). `/admin/settings/pages` lists the 7 seeded pages;
+  `/admin/settings/pages/[id]` is a Markdown textarea with a live preview
+  toggle (same `MarkdownContent` component) and a save-history panel read
+  from `AuditLog` — versioning stays audit-log-based as originally decided
+  in Stage 5, no new revisions table.
+- **Testimonials CRUD** (`src/features/settings/`, extends the existing
+  settings service/actions rather than a new feature folder): dialog-based
+  create/edit (`testimonial-form-dialog.tsx`, following the Stage 4
+  `BodyTypeFormDialog` pattern exactly, including Cloudinary photo upload —
+  added a `testimonials` upload purpose) and a list manager, both new tabs
+  on `/admin/settings`. No new storefront work needed — Stage 5's homepage
+  already reads `listTestimonials()` and hides the section when empty.
+- **Team management** (`src/features/team/`, new feature): `StaffInvite`
+  rows carry no password — the invited person sets their own on accept, so
+  there's no intermediate "temporary password" to leak. `inviteStaff()`
+  blocks a duplicate invite or an already-registered email; `acceptInvite()`
+  looks the token up via `forPlatform()` (same reasoning as
+  `verifyEmailToken()` — the tenant isn't known until the token resolves it)
+  then creates the `User` pre-verified and marks the invite `ACCEPTED`.
+  `updateStaffRole()`/`setStaffActive()` refuse to touch an `OWNER` row
+  (there is exactly one owner per dealership, created at onboarding) and
+  deactivating a staff member revokes every one of their `RefreshToken` rows
+  via Stage 2's `revokeAllRefreshTokensForUser()`, so a deactivated
+  salesperson is logged out immediately, not just blocked on next login.
+  Invites are restricted to `MANAGER`/`SALES` and every team action requires
+  `OWNER` — a `MANAGER` can see the "Pages" settings tab but not "Team".
+  Public accept flow at `/accept-invite` (new `(auth)` route, mirrors
+  `/verify-email`/`/reset-password`'s shape: invalid/expired token gets its
+  own message, valid token renders `AcceptInviteForm`). `/admin/settings/team`
+  brings together the invite form, pending-invite list (with revoke), a
+  staff table (inline role change via `Select`, deactivate/reactivate — the
+  signed-in owner's own row is read-only), and an activity log reading
+  `AuditLog` for the dealership (all Stage 1–7 audit-logged actions show up
+  here, not just team events, since that's a more useful "what happened
+  today" view for an owner than a team-only filter).
+- **New dependency**: `react-markdown` (no `dangerouslySetInnerHTML`
+  anywhere in the codebase now, before or after this stage).
+- Verified end-to-end with a scripted smoke test run directly against the
+  service layer against the seeded database (bypassing browser auth, same
+  approach as Stage 4): created a contact lead → confirmed the dealer
+  notification dev-logged → listed/filtered leads → status/assign/note all
+  landed correctly; edited a policy page's content → confirmed an `AuditLog`
+  history entry → restored the original content; created/updated/deleted a
+  testimonial; toggled notification preferences; ran the full team lifecycle
+  (invite → block duplicate invite → look up by token → accept → new user is
+  `SALES`/active/pre-verified → change role to `MANAGER` → deactivate →
+  confirm `isActive: false` → activity log shows all of it in order) — all
+  passed, then cleaned up every row it created. Separately confirmed
+  `/admin/leads` and `/admin/settings` redirect to `/login` unauthenticated,
+  and that the Markdown-rendered `/about`/`/terms` storefront pages return
+  200 with a real `<h1>`. `lint`, `typecheck`, `next build` (all 30+ routes
+  including the 6 new ones), and the existing 52-test suite are all green —
+  no new automated tests added this stage, consistent with Stages 3–5's
+  rationale (CRUD/UI work over already-tested tenancy/audit primitives; the
+  one genuinely new piece of security surface, `StaffInvite` tenant scoping,
+  was covered by adding it to `DEALER_OWNED_MODELS` and exercising it in the
+  smoke test rather than a new isolation-test file).
+
+**Next:** Stage 8 — Subscriptions & Platform Admin.
