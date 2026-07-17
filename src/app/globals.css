@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ==========================================================================
+   Moto design tokens — CLAUDE.md Section 5.
+   The neutral system must look premium under ANY dealer brand color:
+   dealers override --brand (and later fonts/radius) per request; everything
+   else derives from these variables.
+   ========================================================================== */
+
+:root {
+  /* Base palette */
+  --ink: #0f1722;
+  --surface: #f7f8fa;
+  --brand: #2563eb; /* default accent — overridden per dealer */
+  --brand-foreground: #ffffff;
+  --status-available: #10b981;
+  --status-reserved: #f59e0b;
+  --status-sold: #dc2626;
+  --gold: #c8a24b;
+
+  /* Geometry & elevation */
+  --radius: 0.75rem; /* 12px cards */
+
+  /* shadcn/ui semantic slots, mapped onto the palette */
+  --background: var(--surface);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: #eef1f5;
+  --secondary-foreground: var(--ink);
+  --muted: #eef1f5;
+  --muted-foreground: #64748b;
+  --accent: #eef1f5;
+  --accent-foreground: var(--ink);
+  --destructive: var(--status-sold);
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: var(--brand);
+}
+
+@theme inline {
+  /* Semantic colors (shadcn/ui components consume these) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Direct palette utilities: bg-ink, text-brand, bg-available, ... */
+  --color-ink: var(--ink);
+  --color-surface: var(--surface);
+  --color-brand: var(--brand);
+  --color-available: var(--status-available);
+  --color-reserved: var(--status-reserved);
+  --color-sold: var(--status-sold);
+  --color-gold: var(--gold);
+
+  /* Typography */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), var(--font-inter), ui-sans-serif, sans-serif;
+
+  /* Radii (radius-lg = the 12px card radius) */
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Elevation: shadow-card everywhere cards appear */
+  --shadow-card: 0 1px 3px rgba(15, 23, 34, 0.08);
+  --shadow-card-hover: 0 4px 12px rgba(15, 23, 34, 0.1);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
+  }
+
+  /* Prices and spec numbers align in columns */
+  .tabular-nums,
+  data {
+    font-variant-numeric: tabular-nums;
+  }
+}
