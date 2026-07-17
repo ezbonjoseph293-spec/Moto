@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { requireRole } from "@/features/auth/require-role";
+import { logoutAction } from "@/features/auth/actions";
+import { Button } from "@/components/ui/button";
 
 /**
  * Platform Super Admin shell. Simple top-nav layout (operator-only surface,
- * no phone-usage requirement). Stage 2 adds the PLATFORM_ADMIN-only guard;
- * Stage 8 fills in dealers/plans/metrics.
+ * no phone-usage requirement). Guarded to PLATFORM_ADMIN only — Stage 8
+ * fills in dealers/plans/metrics.
  */
-export default function PlatformLayout({ children }: { children: React.ReactNode }) {
+export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireRole(["PLATFORM_ADMIN"]);
+
   return (
     <div className="min-h-screen bg-ink">
       <header className="border-b border-white/10">
@@ -15,6 +20,14 @@ export default function PlatformLayout({ children }: { children: React.ReactNode
           <Link href="/platform" className="font-heading text-lg font-bold text-white">
             Moto Platform
           </Link>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-sm text-white/70">{user.name}</span>
+            <form action={logoutAction}>
+              <Button type="submit" variant="inverse" size="sm">
+                Log out
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">

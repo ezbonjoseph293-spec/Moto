@@ -1,0 +1,13 @@
+import { LoginForm } from "@/features/auth/login-form";
+
+export const metadata = { title: "Log in" };
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) {
+  const { callbackUrl } = await searchParams;
+
+  return <LoginForm callbackUrl={callbackUrl} />;
+}

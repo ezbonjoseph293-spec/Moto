@@ -5,6 +5,7 @@ import { envSchema } from "@/lib/env";
 const validEnv = {
   DATABASE_URL: "postgresql://moto:moto@localhost:5432/moto?schema=public",
   DIRECT_URL: "postgresql://moto:moto@localhost:5432/moto?schema=public",
+  AUTH_SECRET: "a".repeat(32),
 };
 
 describe("envSchema", () => {

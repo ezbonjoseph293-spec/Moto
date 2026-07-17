@@ -1,6 +1,16 @@
 import { z } from "zod";
 
 /**
+ * `.env.example` ships every not-yet-required variable present but blank
+ * (`FOO=`), so a freshly-copied `.env` has them as `""`, not absent. Wrap
+ * optional string schemas with this so `""` is treated the same as unset,
+ * instead of failing `.min(1)`.
+ */
+function optionalEnvString<T extends z.ZodTypeAny>(schema: T) {
+  return z.preprocess((val) => (val === "" ? undefined : val), schema.optional());
+}
+
+/**
  * Single source of truth for environment variables.
  * Every variable in `.env.example` is declared here. Variables belonging to
  * later stages are optional for now and tightened to required when the stage
@@ -18,28 +28,28 @@ export const envSchema = z.object({
   DIRECT_URL: z.string().url(),
 
   // Auth.js (Stage 2)
-  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters").optional(),
-  AUTH_URL: z.string().url().optional(),
+  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
+  AUTH_URL: optionalEnvString(z.string().url()),
 
   // Cloudinary (Stage 3)
-  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
-  CLOUDINARY_API_KEY: z.string().min(1).optional(),
-  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
-  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+  CLOUDINARY_CLOUD_NAME: optionalEnvString(z.string().min(1)),
+  CLOUDINARY_API_KEY: optionalEnvString(z.string().min(1)),
+  CLOUDINARY_API_SECRET: optionalEnvString(z.string().min(1)),
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: optionalEnvString(z.string().min(1)),
 
   // Flutterwave (Stages 6 & 8)
-  FLUTTERWAVE_PUBLIC_KEY: z.string().min(1).optional(),
-  FLUTTERWAVE_SECRET_KEY: z.string().min(1).optional(),
-  FLUTTERWAVE_WEBHOOK_SECRET_HASH: z.string().min(1).optional(),
+  FLUTTERWAVE_PUBLIC_KEY: optionalEnvString(z.string().min(1)),
+  FLUTTERWAVE_SECRET_KEY: optionalEnvString(z.string().min(1)),
+  FLUTTERWAVE_WEBHOOK_SECRET_HASH: optionalEnvString(z.string().min(1)),
 
   // Africa's Talking (Stage 6)
-  AFRICASTALKING_USERNAME: z.string().min(1).optional(),
-  AFRICASTALKING_API_KEY: z.string().min(1).optional(),
-  AFRICASTALKING_SENDER_ID: z.string().min(1).optional(),
+  AFRICASTALKING_USERNAME: optionalEnvString(z.string().min(1)),
+  AFRICASTALKING_API_KEY: optionalEnvString(z.string().min(1)),
+  AFRICASTALKING_SENDER_ID: optionalEnvString(z.string().min(1)),
 
   // Resend (Stage 2)
-  RESEND_API_KEY: z.string().min(1).optional(),
-  EMAIL_FROM: z.string().min(1).optional(),
+  RESEND_API_KEY: optionalEnvString(z.string().min(1)),
+  EMAIL_FROM: optionalEnvString(z.string().min(1)),
 });
 
 export type Env = z.infer<typeof envSchema>;
