@@ -141,3 +141,5 @@ Write the codebase as if it will support 100,000+ listings and millions of month
 Work iteratively. **First present for my approval: (1) the full Prisma schema, (2) the route map (public, dealer admin, platform admin, API), and (3) the tenancy + payment-webhook design.** Only after approval, build Phase 1 in this order: schema & tenancy foundation → auth & onboarding wizard → inventory management → storefront → deposit flow with webhooks & SMS → leads, settings, policies → platform admin → polish, tests, seed, deploy docs. Ask clarifying questions whenever requirements are ambiguous instead of assuming.
 
 **Final objective:** an enterprise-grade platform where any dealership owner independently manages branding, inventory, content, policies, deposits, team, and settings through a polished dashboard — without ever needing a developer — and where you can onboard dealer #2, #10, and #100 without touching code.
+
+Always update PROGRESS.md at the end of each completed stage.
