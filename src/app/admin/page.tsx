@@ -1,8 +1,23 @@
 import { LayoutDashboard } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { requireRole } from "@/features/auth/require-role";
+import { forPlatform } from "@/features/tenancy";
 
-export default function AdminOverviewPage() {
+export default async function AdminOverviewPage() {
+  const user = await requireRole(["OWNER", "MANAGER", "SALES"]);
+
+  if (user.role === "OWNER" && user.dealershipId) {
+    const dealership = await forPlatform().dealership.findUniqueOrThrow({
+      where: { id: user.dealershipId },
+      select: { onboardingCompletedAt: true },
+    });
+    if (!dealership.onboardingCompletedAt) {
+      redirect("/admin/onboarding");
+    }
+  }
+
   return (
     <EmptyState
       icon={LayoutDashboard}

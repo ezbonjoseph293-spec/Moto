@@ -242,6 +242,11 @@ model Dealership {
   name   String
   status DealershipStatus @default(ACTIVE)
 
+  /// Set once the Stage 3 onboarding wizard (branding, contact, deposit
+  /// policy, publish) has been completed. Null routes the owner back into
+  /// the wizard instead of the normal admin overview.
+  onboardingCompletedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

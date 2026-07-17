@@ -3,6 +3,7 @@ import "dotenv/config";
 import { hashSync } from "bcryptjs";
 
 import { forDealership, forPlatform } from "../src/features/tenancy";
+import { slugify } from "../src/lib/slug";
 
 const platform = forPlatform();
 
@@ -139,7 +140,7 @@ async function seedPlatformAdmin() {
 
 async function seedDealership(config: (typeof DEALERSHIPS)[number], planId: string) {
   const dealership = await platform.dealership.create({
-    data: { slug: config.slug, name: config.name },
+    data: { slug: config.slug, name: config.name, onboardingCompletedAt: new Date() },
   });
 
   const db = forDealership(dealership.id);
@@ -378,13 +379,6 @@ async function seedDealership(config: (typeof DEALERSHIPS)[number], planId: stri
   }
 
   console.log(`Seeded ${dealership.name} (${dealership.slug}) — ${vehicles.length} vehicles, owner=${owner.email}`);
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
 }
 
 async function main() {

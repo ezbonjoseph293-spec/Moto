@@ -96,4 +96,63 @@ local Postgres. No database models yet.
   are blank strings (`FOO=`), not absent — `""` now normalizes to `undefined`
   before validation.
 
-**Next:** Stage 3 — Dealer Onboarding & Website Settings.
+## Stage 3 — Dealer Onboarding & Website Settings ✅
+
+- **Public onboarding entry point** (`/onboarding`, `src/features/onboarding/`):
+  a single form (dealership name, owner name, email, password) creates
+  `Dealership` + a default `Setting` row + an `OWNER` user in one transaction
+  (`onboarding/service.ts`), reusing the Stage 2 email-verification flow —
+  staff accounts still only ever originate here or from Stage 7 team invites,
+  never the open customer signup form. The dealer's slug is generated and
+  de-duplicated by a new shared util, `src/lib/slug.ts` (`generateUniqueDealerSlug`),
+  which `prisma/seed.ts` now also uses instead of its own copy.
+- **`Dealership.onboardingCompletedAt`** (new nullable column, one migration)
+  gates a multi-step wizard at `/admin/onboarding` — Branding → Contact →
+  Deposit policy → Publish — built from the same forms and Server Actions as
+  the ongoing Settings module (see below), so there's exactly one code path
+  that writes `Setting`, not two. `/admin` redirects an `OWNER` there until
+  it's set; the Publish step shows the live storefront URL with copy and
+  "Share to WhatsApp" actions before marking onboarding complete.
+- **`src/features/settings/`** — the ongoing "change literally everything"
+  module: Zod schemas (`schema.ts`), a service layer over `forDealership()`
+  that audit-logs every mutation (`service.ts`), and Server Actions
+  (`actions.ts`) restricted to `OWNER`/`MANAGER`. `/admin/settings` renders it
+  as five tabs (Branding, Contact, Navigation, Announcement, Deposit policy)
+  built on new `Tabs`/`Select`/`Switch`/`Textarea` primitives
+  (`@radix-ui/react-{tabs,select,switch}`, matching the existing shadcn/ui
+  component style). Header/footer navigation is plain `Menu` CRUD with
+  up/down reordering (no drag-and-drop dependency — not worth it for a
+  handful of links).
+- **Cloudinary**, implemented without the Cloudinary SDK: `src/lib/cloudinary.ts`
+  signs direct-to-browser uploads with Node's built-in `crypto` (SHA-1, per
+  Cloudinary's documented signing algorithm), and `/api/uploads/sign` hands
+  out a short-lived signature scoped to the caller's own dealership folder
+  (`dealers/{dealershipId}/{branding|favicon}`). `ImageUpload`
+  (`src/components/media/image-upload.tsx`) uploads directly to Cloudinary
+  from the browser — the file never touches our server — but always keeps a
+  manual "paste an image URL" fallback, so logo/favicon fields work even
+  before a dealer (or this environment) has real Cloudinary credentials
+  configured; the Cloudinary env vars stay optional-until-configured rather
+  than hard-required, consistent with how `mailer.ts` already degrades
+  gracefully without `RESEND_API_KEY`.
+- **Storefront resolution**: `/{dealerSlug}` now resolves the dealer from the
+  database (`layout.tsx`), 404ing cleanly for unknown slugs. Branding applies
+  via inline-scoped CSS variables (`--brand`, `--radius`, `--font-heading`) so
+  it can never leak between dealers on the same server — no client JS, no
+  global state. Header/footer render the dealer's real logo, nav, contact
+  info, WhatsApp deep link, business hours, socials, and an embedded
+  OpenStreetMap pin (zero API key needed) when coordinates are set. The
+  announcement bar and homepage both reflect real `Setting` data instead of
+  the Stage 0 placeholder chrome.
+- Verified end-to-end against the seeded database with the dev server
+  running: storefront pages for both seeded dealers render their real
+  branding/contact/nav/hours; an unknown slug 404s; logging in as a seeded
+  `OWNER` reaches `/admin/settings` and all five tabs render with the
+  dealer's existing data pre-filled.
+- 40 existing tests still green (typecheck, lint, and `next build` all clean).
+  No new automated tests added this stage — Stage 3 is UI/forms/integration
+  work over already-tested tenancy and auth primitives; the state-machine and
+  webhook-heavy stages ahead (6, 8) are where new integration test coverage
+  matters most.
+
+**Next:** Stage 4 — Inventory Management.
