@@ -236,4 +236,109 @@ local Postgres. No database models yet.
   lands in Stage 6, which is where integration tests for the full state
   machine belong.
 
-**Next:** Stage 5 — Public Storefront.
+## Stage 5 — Public Storefront ✅
+
+- **`src/features/storefront/service.ts`** — every public read goes through
+  `forDealership()` and hard-filters to `status: "AVAILABLE"` (never the raw
+  admin `listVehicles`), so `DRAFT`/`ARCHIVED`/`HIDDEN`/`SOLD` vehicles can
+  never leak onto the storefront regardless of a guessed URL:
+  `listPublicVehicles` (search/brand/bodyType/condition/fuel/transmission/
+  drive/color/price/year filters + sort + pagination), `getPublicVehicleBySlug`
+  (also allows `RESERVED` so a shared link still resolves), `listFeatured/
+  LatestVehicles`, `getRelatedVehicles`, `listPublicBrands/BodyTypes`,
+  `listPublicCollections` + `getPublicCollectionVehicles` (reuses the Stage 4
+  rule-based logic, filtered to `AVAILABLE`), `getPageByKey/BySlug` +
+  `listPolicyPages`, `listTestimonials`. `recordVehicleView()` and
+  `recordAnalyticsEvent()` are deliberately best-effort (wrapped in
+  try/catch) so a database hiccup on the `AnalyticsEvent` write never breaks
+  a page render. A tiny `src/features/storefront/actions.ts` exposes
+  `trackClickAction` (`"use server"`) so client CTAs (WhatsApp/call/reserve
+  buttons) can log `AnalyticsEvent` clicks without a full API route.
+- **`src/features/leads/`** built out (was a Stage 7 stub): `schema.ts`
+  (`contactFormSchema`, `vehicleInquirySchema`), `service.ts`
+  (`createContactLead`, `createVehicleInquiryLead` — both `forDealership()`-
+  scoped, audit-logged), `actions.ts` (`submitContactFormAction`,
+  `submitVehicleInquiryAction` — public Server Actions, no `requireRole()`,
+  IP-rate-limited via the Stage 2 `rateLimit()` helper since these have no
+  session to key off). The admin inbox itself (statuses, assignment, notes)
+  stays Stage 7.
+- **Homepage** (`[dealerSlug]/page.tsx`, replacing the Stage 0/3 placeholder):
+  hero using `Setting.tagline`, featured vehicles, latest arrivals, a
+  collections row (featured collections only), a "why choose us" grid,
+  brand logo strip (featured brands), testimonials (section omitted entirely
+  when empty rather than showing a placeholder), and a closing CTA banner —
+  plus `AutoDealer` JSON-LD. Every section is conditionally rendered so an
+  early-stage dealer with no featured vehicles/collections/testimonials still
+  gets a clean page instead of empty boxes.
+- **Inventory** (`[dealerSlug]/inventory/`): SSR list driven entirely by
+  `searchParams` (shareable/bookmarkable URLs), a filter sidebar on desktop /
+  bottom sheet on mobile (`InventoryFilters`, new shadcn `sheet` +
+  `accordion` + `skeleton`), a separate `InventorySort` control, and
+  `StorefrontPagination` (plain `<a>` links built from the current query
+  string, so pagination works without JS). `loading.tsx` skeleton grids on
+  both the list and detail routes cover the Suspense gap while a filter
+  change streams in new data.
+- **Vehicle detail** (`[dealerSlug]/inventory/[slug]/`): a Swiper
+  (`VehicleGallery`) main carousel + thumbnail strip with a captioned empty
+  state for cars with no photos yet, spec table, features checklist,
+  brochure downloads, inline `<video>` playback, a `ShareButton` (Web Share
+  API with clipboard fallback), a `VehicleStickyBar` that's a fixed
+  price/WhatsApp/call/reserve bar on mobile and a static sidebar block on
+  desktop, and a `VehicleInquiryForm` writing straight to the new leads
+  service. `Vehicle` JSON-LD included. The "Reserve this car" button links to
+  `/reserve?vehicle={slug}` — a stub page (deposit amount computed live from
+  `Setting.depositType/depositFixedAmount/depositPercentage` × the vehicle's
+  price, hold hours, and refund policy text, all rendered in plain language)
+  with a "payment is coming soon" notice; real Flutterwave checkout is Stage
+  6, and the page is marked `robots: noindex`.
+- **Collections, about, contact, policies**: `/collections` (grid of all
+  collections) and `/collections/[slug]` (live membership via the shared
+  service function); `/about` renders `Page{key: ABOUT}` with a tagline
+  fallback if the dealer hasn't written one yet; `/contact` combines
+  `Setting` contact details + the same OpenStreetMap embed used in the
+  footer with a `ContactForm` that writes a `CONTACT_FORM` lead. Policy pages
+  (`privacy`, `terms`, `cookie-policy`, `warranty`, `returns`, `financing`)
+  render at `/{dealerSlug}/{slug}` — a bare `[slug]` catch-all, not
+  `/policies/{slug}`, because that's the exact URL shape the Stage 1 seed's
+  footer `Menu` rows already use (`/privacy`, `/terms`); Next.js resolves the
+  literal `inventory`/`about`/`contact`/`collections`/`reserve` folders
+  before falling through to the dynamic segment, so there's no collision.
+  `Page.content` is rendered as plain pre-wrapped text, not
+  `dangerouslySetInnerHTML` — the Stage 1 seed stores plain paragraphs and
+  the Stage 7 rich-text editor (with whatever sanitization it lands with)
+  hasn't shipped yet.
+- **SEO**: `src/lib/seo.ts` (`vehicleJsonLd`, `autoDealerJsonLd`, `dealerUrl`/
+  `siteUrl` off `NEXT_PUBLIC_APP_URL`), per-page `generateMetadata` with
+  canonical URLs on every storefront route, and a per-dealer
+  `[dealerSlug]/sitemap.xml` + `[dealerSlug]/robots.txt` implemented as
+  Route Handlers (not the `sitemap.ts`/`robots.ts` file convention, which
+  doesn't cleanly support enumerating URLs under a *dynamic* segment) —
+  `sitemap.xml` lists the dealer's available vehicles, collections, and
+  policy pages with `lastmod`; `robots.txt` disallows `/reserve` and points
+  back at that dealer's own sitemap.
+- **New dependencies**: `swiper` (gallery) and `framer-motion` (installed per
+  CLAUDE.md §1; not yet used for page-transition polish — that's a Stage 9
+  polish-pass candidate). New shadcn/ui primitives: `accordion`, `skeleton`,
+  `sheet`, `avatar` (installed via CLI; `button.tsx` checked afterward and
+  was **not** overwritten this time, unlike Stage 4). `next.config.ts` now
+  declares `images.remotePatterns` for `res.cloudinary.com` so vehicle photos
+  get real Next/Image optimization on the public, perf-sensitive storefront
+  instead of the admin's `unoptimized` shortcut.
+- Verified end-to-end against the seeded database with the dev server
+  running: home/inventory/vehicle-detail/collections/about/contact/reserve/
+  sitemap.xml/robots.txt all 200 for `prestige-motors-kampala`, an unknown
+  slug 404s, inventory price/brand/year filtering and sorting all produce
+  200s, the reserve stub correctly computes a live deposit amount (UGX
+  5,100,000 = 15% of a 34,000,000 UGX vehicle) from `Setting`, and
+  `createContactLead`/`createVehicleInquiryLead` were smoke-tested directly
+  against the database (created rows with the right `source`/`vehicleId`,
+  then cleaned up). `lint`, `typecheck`, and `next build` are clean; all 40
+  existing tests still pass. No new automated tests added this stage — same
+  rationale as Stages 3/4, this is read-heavy UI work over already-tested
+  tenancy primitives, plus two small, low-risk public write paths
+  (`createContactLead`/`createVehicleInquiryLead`) that mirror the
+  already-tested `forDealership()` scoping; Stage 6's webhook and state
+  machine is where the next real integration-test investment belongs.
+
+**Next:** Stage 6 — Deposits & Reservations (approval gate — payment design
+must be presented before any code is written).
