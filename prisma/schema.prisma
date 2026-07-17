@@ -1,11 +1,1130 @@
 // Moto Platform — Prisma schema
-// Data models are designed and added in Stage 1 (schema & tenancy foundation).
+// Stage 1: Database Schema & Tenancy Foundation
+//
+// Every dealer-owned model carries `dealershipId` with a composite index so
+// the repository layer (src/features/tenancy) can enforce tenant scoping on
+// every query. Phase 1 and Phase 2 models are both defined now so the schema
+// does not need structural rework later — only Phase 1 features are built
+// first.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+enum UserRole {
+  PLATFORM_ADMIN
+  OWNER
+  MANAGER
+  SALES
+  CUSTOMER
+}
+
+enum DealershipStatus {
+  ACTIVE
+  TRIAL_EXPIRED
+  SUSPENDED
+  CANCELLED
+}
+
+enum VehicleStatus {
+  DRAFT
+  AVAILABLE
+  RESERVED
+  SOLD
+  ARCHIVED
+  HIDDEN
+}
+
+enum VehicleCondition {
+  NEW
+  USED
+  IMPORTED
+  CERTIFIED_PRE_OWNED
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+  PLUGIN_HYBRID
+  LPG
+  OTHER
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATIC
+  CVT
+  SEMI_AUTOMATIC
+}
+
+enum DriveType {
+  FWD
+  RWD
+  AWD
+  FOUR_WD
+}
+
+enum MileageUnit {
+  KM
+  MILES
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum CollectionRuleType {
+  MANUAL
+  RULE_BASED
+}
+
+enum ReservationStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  COMPLETED
+  REFUND_PENDING
+  REFUNDED
+  DISPUTED
+}
+
+enum PaymentPurpose {
+  DEPOSIT
+  SUBSCRIPTION
+}
+
+enum PaymentProvider {
+  FLUTTERWAVE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum LeadSource {
+  VEHICLE_INQUIRY
+  CONTACT_FORM
+  DEPOSIT
+  TRADE_IN
+  FINANCE_APPLICATION
+  TEST_DRIVE
+  NEWSLETTER
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CLOSED
+  LOST
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum PageKey {
+  ABOUT
+  PRIVACY
+  TERMS
+  COOKIE_POLICY
+  WARRANTY
+  RETURNS
+  FINANCING
+  CUSTOM
+}
+
+enum MenuLocation {
+  HEADER
+  FOOTER
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum TradeInStatus {
+  SUBMITTED
+  REVIEWING
+  OFFER_MADE
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+}
+
+enum FinanceApplicationStatus {
+  SUBMITTED
+  REVIEWING
+  APPROVED
+  DECLINED
+  WITHDRAWN
+}
+
+enum AppointmentStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ServiceBookingStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum NotificationType {
+  NEW_LEAD
+  NEW_RESERVATION
+  RESERVATION_EXPIRED
+  PAYMENT_FAILED
+  SUBSCRIPTION_TRIAL_ENDING
+  SUBSCRIPTION_PAST_DUE
+  SUBSCRIPTION_SUSPENDED
+  SYSTEM
+}
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  VEHICLE_VIEW
+  RESERVE_CLICK
+  WHATSAPP_CLICK
+  CALL_CLICK
+  LEAD_SUBMITTED
+}
+
+enum RedirectStatusCode {
+  MOVED_PERMANENTLY // 301
+  FOUND // 302
+}
+
+// ============================================================================
+// Platform: Dealership, Plan, Subscription
+// ============================================================================
+
+/// Tenant root. Every dealer-owned table hangs off this via dealershipId.
+model Dealership {
+  id     String           @id @default(cuid())
+  slug   String           @unique
+  name   String
+  status DealershipStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users            User[]
+  branches         Branch[]
+  brands           Brand[]
+  bodyTypes        BodyType[]
+  vehicles         Vehicle[]
+  vehicleImages    VehicleImage[]
+  vehicleVideos    VehicleVideo[]
+  vehicleDocuments VehicleDocument[]
+  collections      Collection[]
+  collectionItems  CollectionVehicle[]
+  reservations     Reservation[]
+  paymentTxns      PaymentTransaction[]
+  leads            Lead[]
+  leadNotes        LeadNote[]
+  testimonials     Testimonial[]
+  blogCategories   BlogCategory[]
+  blogPosts        BlogPost[]
+  pages            Page[]
+  menus            Menu[]
+  setting          Setting?
+  mediaAssets      MediaAsset[]
+  favorites        Favorite[]
+  tradeInRequests  TradeInRequest[]
+  financeApps      FinanceApplication[]
+  appointments     Appointment[]
+  serviceBookings  ServiceBooking[]
+  newsletterSubs   NewsletterSubscriber[]
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  redirects        Redirect[]
+  analyticsEvents  AnalyticsEvent[]
+  subscription     Subscription?
+
+  @@index([status])
+}
+
+model Plan {
+  id           String  @id @default(cuid())
+  code         String  @unique
+  name         String
+  priceMonthly Decimal @db.Decimal(12, 2)
+  priceYearly  Decimal @db.Decimal(12, 2)
+  currency     String  @default("UGX")
+  trialDays    Int     @default(14)
+  features     Json
+  isActive     Boolean @default(true)
+
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id           String     @id @default(cuid())
+  dealershipId String     @unique
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  planId       String
+  plan         Plan       @relation(fields: [planId], references: [id])
+
+  status             SubscriptionStatus @default(TRIALING)
+  billingInterval    BillingInterval    @default(MONTHLY)
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean            @default(false)
+
+  flutterwaveCustomerId     String?
+  flutterwaveSubscriptionId String?
+
+  paymentTxns PaymentTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+/// Extra branch/showroom locations per dealer (Phase 2 multi-branch).
+model Branch {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  name      String
+  address   String
+  latitude  Float?
+  longitude Float?
+  phone     String?
+  isMain    Boolean @default(false)
+
+  vehicles        Vehicle[]
+  appointments    Appointment[]
+  serviceBookings ServiceBooking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId])
+}
+
+// ============================================================================
+// Users & Auth
+// ============================================================================
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String?
+  name         String
+  phone        String?
+  image        String?
+  role         UserRole
+  /// Null for PLATFORM_ADMIN and platform-wide CUSTOMER accounts; required for OWNER/MANAGER/SALES.
+  dealershipId String?
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  emailVerifiedAt DateTime?
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
+
+  passwordResetTokens  PasswordResetToken[]
+  verificationTokens   VerificationToken[]
+  refreshTokens        RefreshToken[]
+  assignedLeads        Lead[]               @relation("LeadAssignee")
+  leadNotes            LeadNote[]
+  favorites            Favorite[]
+  blogPosts            BlogPost[]
+  auditLogs            AuditLog[]
+  notifications        Notification[]
+  assignedAppointments Appointment[]        @relation("AppointmentAssignee")
+  tradeInRequests      TradeInRequest[]
+  financeApplications  FinanceApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId])
+  @@index([dealershipId, role])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// ============================================================================
+// Catalog: Brand, BodyType
+// ============================================================================
+
+model Brand {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  name        String
+  slug        String
+  logoUrl     String?
+  description String?
+  order       Int     @default(0)
+  isFeatured  Boolean @default(false)
+
+  vehicles Vehicle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealershipId, slug])
+  @@index([dealershipId])
+}
+
+model BodyType {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  name    String
+  slug    String
+  iconUrl String?
+  order   Int     @default(0)
+
+  vehicles Vehicle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealershipId, slug])
+  @@index([dealershipId])
+}
+
+// ============================================================================
+// Vehicles
+// ============================================================================
+
+model Vehicle {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  branchId     String?
+  branch       Branch?    @relation(fields: [branchId], references: [id])
+  brandId      String
+  brand        Brand      @relation(fields: [brandId], references: [id])
+  bodyTypeId   String?
+  bodyType     BodyType?  @relation(fields: [bodyTypeId], references: [id])
+
+  title         String
+  slug          String
+  year          Int
+  price         Decimal  @db.Decimal(12, 2)
+  currency      String   @default("UGX")
+  discountPrice Decimal? @db.Decimal(12, 2)
+
+  mileage      Int?
+  mileageUnit  MileageUnit      @default(KM)
+  fuelType     FuelType
+  transmission TransmissionType
+  driveType    DriveType?
+  condition    VehicleCondition
+  color        String?
+  seats        Int?
+  doors        Int?
+  engineSizeCc Int?
+  vin          String?
+
+  description String @db.Text
+  features    Json?
+
+  status     VehicleStatus @default(DRAFT)
+  isFeatured Boolean       @default(false)
+  publishAt  DateTime?
+  viewCount  Int           @default(0)
+  soldAt     DateTime?
+
+  images          VehicleImage[]
+  videos          VehicleVideo[]
+  documents       VehicleDocument[]
+  collectionRefs  CollectionVehicle[]
+  reservations    Reservation[]
+  leads           Lead[]
+  favorites       Favorite[]
+  financeApps     FinanceApplication[]
+  appointments    Appointment[]
+  analyticsEvents AnalyticsEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealershipId, slug])
+  @@index([dealershipId, status])
+  @@index([dealershipId, isFeatured])
+  @@index([dealershipId, brandId])
+  @@index([dealershipId, bodyTypeId])
+}
+
+model VehicleImage {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  vehicle      Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  url      String
+  publicId String
+  altText  String?
+  order    Int     @default(0)
+  isCover  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([dealershipId])
+  @@index([vehicleId])
+}
+
+model VehicleVideo {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  vehicle      Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  url      String
+  provider String @default("cloudinary")
+  order    Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([dealershipId])
+  @@index([vehicleId])
+}
+
+model VehicleDocument {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  vehicle      Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  url   String
+  label String
+  order Int    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([dealershipId])
+  @@index([vehicleId])
+}
+
+// ============================================================================
+// Collections
+// ============================================================================
+
+model Collection {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  name        String
+  slug        String
+  description String?
+  imageUrl    String?
+  order       Int                @default(0)
+  isFeatured  Boolean            @default(false)
+  ruleType    CollectionRuleType @default(MANUAL)
+  ruleConfig  Json?
+
+  items CollectionVehicle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealershipId, slug])
+  @@index([dealershipId])
+}
+
+model CollectionVehicle {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  vehicle      Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([collectionId, vehicleId])
+  @@index([dealershipId])
+}
+
+// ============================================================================
+// Deposits, Reservations & Payments
+// ============================================================================
+
+model Reservation {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  vehicle      Vehicle    @relation(fields: [vehicleId], references: [id])
+
+  buyerName  String
+  buyerPhone String
+  buyerEmail String?
+
+  depositAmount Decimal @db.Decimal(12, 2)
+  currency      String  @default("UGX")
+
+  status        ReservationStatus @default(PENDING_PAYMENT)
+  holdExpiresAt DateTime?
+  refundStatus  String?
+  refundNotes   String?
+
+  paymentTxns PaymentTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+  @@index([vehicleId])
+  @@index([holdExpiresAt])
+}
+
+/// Idempotency guaranteed by unique providerRef — webhook handlers must upsert on it, never insert blindly.
+model PaymentTransaction {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  reservationId  String?
+  reservation    Reservation?  @relation(fields: [reservationId], references: [id])
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  purpose  PaymentPurpose
+  provider PaymentProvider @default(FLUTTERWAVE)
+
+  /// Our tx_ref sent to Flutterwave — unique, used for idempotent webhook processing.
+  providerRef      String  @unique
+  flwTransactionId String?
+
+  status     PaymentStatus @default(PENDING)
+  amount     Decimal       @db.Decimal(12, 2)
+  currency   String        @default("UGX")
+  rawPayload Json?
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+  @@index([reservationId])
+  @@index([subscriptionId])
+}
+
+// ============================================================================
+// Leads
+// ============================================================================
+
+model Lead {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  source  LeadSource
+  name    String
+  phone   String?
+  email   String?
+  message String?
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  status       LeadStatus @default(NEW)
+  assignedToId String?
+  assignedTo   User?      @relation("LeadAssignee", fields: [assignedToId], references: [id])
+
+  notes LeadNote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+  @@index([dealershipId, createdAt])
+}
+
+model LeadNote {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  leadId       String
+  lead         Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User       @relation(fields: [authorId], references: [id])
+
+  note String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+// ============================================================================
+// Testimonials, Blog, Pages, Menus
+// ============================================================================
+
+model Testimonial {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  customerName  String
+  customerPhoto String?
+  rating        Int     @default(5)
+  message       String  @db.Text
+  isFeatured    Boolean @default(false)
+  order         Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId])
+}
+
+model BlogCategory {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  name String
+  slug String
+
+  posts BlogPost[]
+
+  @@unique([dealershipId, slug])
+  @@index([dealershipId])
+}
+
+model BlogPost {
+  id           String        @id @default(cuid())
+  dealershipId String
+  dealership   Dealership    @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  categoryId   String?
+  category     BlogCategory? @relation(fields: [categoryId], references: [id])
+  authorId     String
+  author       User          @relation(fields: [authorId], references: [id])
+
+  title          String
+  slug           String
+  excerpt        String?
+  content        String     @db.Text
+  coverImageUrl  String?
+  status         BlogStatus @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealershipId, slug])
+  @@index([dealershipId, status])
+}
+
+/// About/contact and policy pages (privacy, terms, warranty, returns, financing, cookies).
+/// Content edits are versioned via AuditLog rather than a separate revisions table.
+model Page {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  key            PageKey
+  slug           String
+  title          String
+  content        String  @db.Text
+  seoTitle       String?
+  seoDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealershipId, key])
+  @@unique([dealershipId, slug])
+  @@index([dealershipId])
+}
+
+model Menu {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  location MenuLocation
+  label    String
+  url      String
+  order    Int          @default(0)
+  parentId String?
+  parent   Menu?        @relation("MenuChildren", fields: [parentId], references: [id])
+  children Menu[]       @relation("MenuChildren")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, location])
+}
+
+// ============================================================================
+// Settings (one row per dealer)
+// ============================================================================
+
+model Setting {
+  id           String     @id @default(cuid())
+  dealershipId String     @unique
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  // Identity
+  businessName String?
+  tagline      String?
+  logoLightUrl String?
+  logoDarkUrl  String?
+  faviconUrl   String?
+
+  // Theme
+  brandColor   String @default("#2563EB")
+  fontChoice   String @default("default")
+  borderRadius String @default("md")
+  buttonStyle  String @default("solid")
+
+  // Contact
+  phonePrimary   String?
+  phoneSecondary String?
+  whatsappNumber String?
+  email          String?
+  address        String?
+  latitude       Float?
+  longitude      Float?
+  businessHours  Json?
+  socialLinks    Json?
+
+  // Storefront content toggles
+  announcementBarText   String?
+  announcementBarActive Boolean @default(false)
+  homepageSections      Json?
+
+  // Deposit / reservation policy
+  depositType        String   @default("FIXED") // FIXED | PERCENTAGE
+  depositFixedAmount Decimal? @db.Decimal(12, 2)
+  depositPercentage  Decimal? @db.Decimal(5, 2)
+  depositHoldHours   Int      @default(48)
+  refundPolicyText   String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// Media Library
+// ============================================================================
+
+model MediaAsset {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  url       String
+  publicId  String
+  type      MediaType
+  folder    String?
+  altText   String?
+  width     Int?
+  height    Int?
+  bytes     Int?
+  usedCount Int       @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([dealershipId, type])
+}
+
+// ============================================================================
+// Customer accounts (Phase 2): favorites, trade-in, finance, appointments
+// ============================================================================
+
+model Favorite {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  vehicle      Vehicle    @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, vehicleId])
+  @@index([dealershipId])
+}
+
+model TradeInRequest {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  customerId   String?
+  customer     User?      @relation(fields: [customerId], references: [id])
+
+  name  String
+  phone String
+  email String?
+
+  vehicleMake  String
+  vehicleModel String
+  vehicleYear  Int
+  mileage      Int?
+  condition    String?
+  photos       Json?
+
+  status TradeInStatus @default(SUBMITTED)
+  notes  String?       @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+}
+
+model FinanceApplication {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  vehicleId    String?
+  vehicle      Vehicle?   @relation(fields: [vehicleId], references: [id])
+  customerId   String?
+  customer     User?      @relation(fields: [customerId], references: [id])
+
+  name             String
+  phone            String
+  email            String?
+  employmentStatus String?
+  monthlyIncome    Decimal? @db.Decimal(12, 2)
+  downPayment      Decimal? @db.Decimal(12, 2)
+  loanTermMonths   Int?
+
+  status FinanceApplicationStatus @default(SUBMITTED)
+  notes  String?                  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+}
+
+model Appointment {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  branchId     String?
+  branch       Branch?    @relation(fields: [branchId], references: [id])
+  vehicleId    String
+  vehicle      Vehicle    @relation(fields: [vehicleId], references: [id])
+
+  customerName  String
+  customerPhone String
+  customerEmail String?
+
+  scheduledAt  DateTime
+  status       AppointmentStatus @default(REQUESTED)
+  notes        String?           @db.Text
+  assignedToId String?
+  assignedTo   User?             @relation("AppointmentAssignee", fields: [assignedToId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+  @@index([dealershipId, scheduledAt])
+}
+
+model ServiceBooking {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  branchId     String?
+  branch       Branch?    @relation(fields: [branchId], references: [id])
+
+  customerName       String
+  customerPhone      String
+  customerEmail      String?
+  vehicleDescription String
+  serviceType        String
+
+  scheduledAt DateTime
+  status      ServiceBookingStatus @default(REQUESTED)
+  notes       String?              @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealershipId, status])
+  @@index([dealershipId, scheduledAt])
+}
+
+model NewsletterSubscriber {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  email        String
+  subscribedAt DateTime @default(now())
+  isActive     Boolean  @default(true)
+
+  @@unique([dealershipId, email])
+  @@index([dealershipId])
+}
+
+// ============================================================================
+// Notifications, Audit, Redirects, Analytics
+// ============================================================================
+
+model Notification {
+  id           String      @id @default(cuid())
+  dealershipId String?
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String
+  link    String?
+  isRead  Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([dealershipId, isRead])
+  @@index([userId, isRead])
+}
+
+/// Records who changed what, when — covers settings edits, status transitions,
+/// team actions, and impersonation. `before`/`after` are partial snapshots.
+model AuditLog {
+  id           String      @id @default(cuid())
+  dealershipId String?
+  dealership   Dealership? @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  actorId      String?
+  actor        User?       @relation(fields: [actorId], references: [id])
+
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([dealershipId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model Redirect {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+
+  fromPath   String
+  toPath     String
+  statusCode RedirectStatusCode @default(MOVED_PERMANENTLY)
+  isActive   Boolean            @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealershipId, fromPath])
+  @@index([dealershipId])
+}
+
+model AnalyticsEvent {
+  id           String     @id @default(cuid())
+  dealershipId String
+  dealership   Dealership @relation(fields: [dealershipId], references: [id], onDelete: Cascade)
+  vehicleId    String?
+  vehicle      Vehicle?   @relation(fields: [vehicleId], references: [id])
+
+  type      AnalyticsEventType
+  path      String?
+  sessionId String?
+  userAgent String?
+  referrer  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([dealershipId, type, createdAt])
 }

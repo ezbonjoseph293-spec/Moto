@@ -15,6 +15,7 @@ export const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().url(),
+  DIRECT_URL: z.string().url(),
 
   // Auth.js (Stage 2)
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters").optional(),
