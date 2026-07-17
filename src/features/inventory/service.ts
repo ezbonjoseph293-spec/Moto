@@ -2,6 +2,7 @@ import type { Prisma, VehicleCondition, VehicleStatus } from "@prisma/client";
 import Papa from "papaparse";
 
 import { forDealership } from "@/features/tenancy";
+import { syncReservationOnVehicleRelease } from "@/features/payments/service";
 import { recordAuditLog } from "@/lib/audit";
 import { generateUniqueSlug, slugify } from "@/lib/slug";
 import {
@@ -317,6 +318,18 @@ export async function transitionVehicleStatus(
     before: { status: before.status },
     after: { status: vehicle.status },
   });
+
+  // A dealer completing or releasing a sale from RESERVED must also close
+  // out the reservation that put it there — otherwise its hold timer would
+  // keep running (or its deposit would never get flagged for refund) after
+  // the vehicle has already moved on.
+  if (
+    before.status === "RESERVED" &&
+    actorId &&
+    (nextStatus === "SOLD" || nextStatus === "AVAILABLE" || nextStatus === "ARCHIVED")
+  ) {
+    await syncReservationOnVehicleRelease(dealershipId, actorId, id, nextStatus);
+  }
 
   return vehicle;
 }

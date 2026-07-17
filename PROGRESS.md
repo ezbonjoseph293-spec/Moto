@@ -340,5 +340,110 @@ local Postgres. No database models yet.
   already-tested `forDealership()` scoping; Stage 6's webhook and state
   machine is where the next real integration-test investment belongs.
 
-**Next:** Stage 6 — Deposits & Reservations (approval gate — payment design
-must be presented before any code is written).
+## Stage 6 — Deposits & Reservations ✅
+
+Payment design (flow, webhook verification, idempotency, the full
+Reservation/PaymentTransaction state machine, expiry job, and every failure
+mode) was presented and approved before any code was written, per the Stage
+6 gate.
+
+- **`src/lib/flutterwave.ts`**: `initiatePayment()` (Standard hosted checkout
+  — one integration covers MTN MoMo, Airtel Money, and card),
+  `verifyTransaction()` (server-to-server re-fetch from Flutterwave's API —
+  the only source of truth for payment status; the webhook payload itself is
+  never trusted), and `isValidWebhookHash()` (constant-time comparison of the
+  `verif-hash` header against `FLUTTERWAVE_WEBHOOK_SECRET_HASH`).
+  **`src/lib/sms.ts`**: Africa's Talking over plain REST (no SDK dependency),
+  mirroring `mailer.ts`'s dev-log fallback when credentials aren't
+  configured.
+- **`src/features/payments/service.ts`** is the state machine's single home:
+  - `initiateReservation()` creates `Reservation` (`PENDING_PAYMENT`) +
+    `PaymentTransaction` (`PENDING`, `providerRef` = `dep_{reservationId}`)
+    without touching the vehicle — it only ever flips to `RESERVED` once a
+    webhook verifies payment, so an abandoned or slow checkout never blocks
+    the car for other buyers.
+  - `processFlutterwaveWebhookEvent()` is idempotent (looks up
+    `PaymentTransaction` by `providerRef`, short-circuits once it's already
+    non-`PENDING` — safe under Flutterwave's at-least-once retries and
+    replay) and treats the payload as a trigger only, re-verifying via
+    `verifyTransaction()` before mutating anything.
+  - `settleVerifiedPayment()` is the safety-critical step: one
+    `prisma.$transaction` that marks the `PaymentTransaction` `SUCCESSFUL`
+    and atomically tries `UPDATE Vehicle SET status='RESERVED' WHERE
+    status='AVAILABLE'`. Whichever of two concurrent buyers' webhooks wins
+    that conditional update gets `ACTIVE` + the car; the loser's deposit was
+    still captured, so their reservation becomes `REFUND_PENDING` instead of
+    silently disappearing — proven under real concurrent load in tests (two
+    `processFlutterwaveWebhookEvent()` calls via `Promise.all` on one
+    vehicle, not just sequential calls).
+  - `expireStaleReservations()` (per-dealership, called by the cron below):
+    releases `ACTIVE` holds past `holdExpiresAt` back to `AVAILABLE` +
+    `refundStatus: "PENDING"`, and separately cancels `PENDING_PAYMENT`
+    reservations abandoned for 2+ hours with no webhook ever received.
+  - `syncReservationOnVehicleRelease()`, called from
+    `inventory/service.ts`'s `transitionVehicleStatus()` whenever a vehicle
+    leaves `RESERVED`: dealer marks it `SOLD` → reservation `COMPLETED`;
+    dealer releases it back to `AVAILABLE`/`ARCHIVED` → reservation
+    `CANCELLED` + refund flagged. Without this hook a dealer completing or
+    reversing a sale by hand would leave the reservation's hold timer
+    running against a car that already moved on.
+  - Admin actions: `markReservationRefunded()`/`markReservationDisputed()`,
+    both audit-logged; `getReservationHistory()` reads the same `AuditLog`
+    rows back out for the per-reservation transition timeline.
+- **Webhook route** (`/api/webhooks/flutterwave`): rejects (401, no DB
+  writes) unless `verif-hash` matches via `timingSafeEqual`; on an
+  unexpected processing error it 500s deliberately so Flutterwave retries —
+  safe because the handler is idempotent.
+- **Expiry cron** (`/api/cron/expire-reservations`, `vercel.json` every 10
+  min, same `CRON_SECRET`-guarded pattern as Stage 4's publish job).
+- **Buyer flow**: `/{dealerSlug}/reserve` now renders a real `ReserveForm`
+  (name/phone/email → `initiateReservationAction`, rate-limited like the
+  Stage 5 lead forms) whenever the vehicle is `AVAILABLE`, the computed
+  deposit is positive, and `FLUTTERWAVE_SECRET_KEY` is configured — falling
+  back to the existing "contact the dealer" messaging otherwise, same as
+  Stage 3–5's Cloudinary-optional pattern. On success the action redirects
+  straight to the Flutterwave checkout URL. `/reserve/callback` (top-level,
+  outside the `[dealerSlug]` tree — it only needs a `tx_ref`) polls
+  `getReservationStatusAction()` every 3s for up to ~2 minutes and never
+  trusts Flutterwave's own redirect query params to declare success, since
+  the webhook can land after the redirect.
+- **`/admin/deposits`**: list with status-filter tabs, a live
+  `HoldCountdown` for `ACTIVE` reservations; **`/admin/deposits/[id]`**:
+  full reservation + payment-transaction detail, mark-refunded/mark-disputed
+  forms (`OWNER`/`MANAGER` only), and the `AuditLog`-backed transition
+  history. `computeDepositAmount()` moved into the payments service so the
+  reserve page, the initiate-reservation service call, and (later) any admin
+  preview all compute it identically instead of three copies of the same
+  percentage/fixed logic.
+- **Tests** (`src/features/payments/service.test.ts`, 12 new, real database):
+  valid webhook → `ACTIVE` + vehicle `RESERVED`; failed verification →
+  `CANCELLED`; `charge.failed` cancels without ever calling `verifyTransaction`;
+  a replayed successful webhook is a no-op (one `Lead`, `verifyTransaction`
+  called exactly once); two reservations racing on one vehicle under real
+  `Promise.all` concurrency → exactly one `ACTIVE`, one `REFUND_PENDING`;
+  expiry releases a stale hold and separately cancels an abandoned checkout
+  but leaves a fresh one alone; `syncReservationOnVehicleRelease()` for both
+  the SOLD and released-back-to-AVAILABLE paths; the two admin actions.
+  Total suite: 40 → 52 tests, all passing.
+- Found and fixed a real bug surfaced by the concurrency test, not a test
+  artifact: `settleVerifiedPayment`'s interactive transaction did five-plus
+  sequential round-trips over Supabase's session pooler and blew past
+  Prisma's default 5s interactive-transaction timeout ("Transaction not
+  found" mid-transaction). Fixed by parallelizing the independent reads
+  inside the transaction with `Promise.all` and raising `timeout`/`maxWait`
+  on all three multi-step `$transaction` calls in this feature — the earlier
+  full-suite run's `password reset` timeouts in Stage 2's tests were a
+  symptom of the same pooler contention from running everything concurrently
+  and cleared up once this was fixed.
+- Verified end-to-end against the seeded database with the dev server
+  running: `/reserve` correctly shows the "not configured" fallback with no
+  Flutterwave keys set locally; the webhook route 401s with no `verif-hash`
+  header; the cron endpoint runs and returns counts; `/admin/deposits` and
+  `/admin/deposits/[id]` render real seeded reservations for a logged-in
+  `OWNER`. Ran the full happy path against a real seeded vehicle with
+  Flutterwave's HTTP calls stubbed (verify → successful): reservation
+  reached `ACTIVE` with a hold expiry, vehicle flipped to `RESERVED`, SMS
+  dev-logged the confirmation — then cleaned up. `lint`, `typecheck`, and
+  `next build` are all clean.
+
+**Next:** Stage 7 — Leads Inbox & Content.

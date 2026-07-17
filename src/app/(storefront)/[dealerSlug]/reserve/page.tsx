@@ -4,8 +4,11 @@ import { notFound } from "next/navigation";
 import { Clock, ShieldCheck } from "lucide-react";
 
 import { getDealerBySlug, getPublicVehicleBySlug } from "@/features/storefront/service";
+import { computeDepositAmount } from "@/features/payments/service";
+import { ReserveForm } from "@/components/storefront/reserve-form";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/format";
+import { getEnv } from "@/lib/env";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: "Reserve a vehicle", robots: { index: false } };
@@ -27,13 +30,12 @@ export default async function ReservePage({
   const vehicle = vehicleSlug ? await getPublicVehicleBySlug(dealer.id, vehicleSlug) : null;
 
   const price = vehicle ? Number(vehicle.discountPrice ?? vehicle.price) : null;
-  const depositAmount =
-    price !== null
-      ? setting?.depositType === "PERCENTAGE"
-        ? (price * Number(setting.depositPercentage ?? 0)) / 100
-        : Number(setting?.depositFixedAmount ?? 0)
-      : null;
+  const depositAmount = price !== null ? computeDepositAmount(setting, price) : null;
   const holdHours = setting?.depositHoldHours ?? 48;
+  const env = getEnv();
+  const paymentsConfigured = Boolean(env.FLUTTERWAVE_SECRET_KEY);
+  const canReserveNow =
+    vehicle && vehicle.status === "AVAILABLE" && depositAmount !== null && depositAmount > 0;
 
   return (
     <main className="mx-auto max-w-xl px-4 py-14 sm:px-6">
@@ -71,13 +73,22 @@ export default async function ReservePage({
           </p>
         </div>
 
-        <div className="mt-6 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-          Online payment (MTN Mobile Money, Airtel Money, and card) is coming very soon — for now,
-          reach out to the dealer directly to reserve this vehicle.
-        </div>
+        {canReserveNow && paymentsConfigured ? (
+          <div className="mt-6">
+            <ReserveForm dealershipId={dealer.id} vehicleId={vehicle!.id} />
+          </div>
+        ) : (
+          <div className="mt-6 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
+            {vehicle && vehicle.status !== "AVAILABLE"
+              ? "This vehicle is no longer available to reserve."
+              : !paymentsConfigured
+                ? "Online payment isn't configured for this dealership yet — for now, reach out to the dealer directly to reserve this vehicle."
+                : "Pick a vehicle from the inventory to reserve it."}
+          </div>
+        )}
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild>
+          <Button asChild variant="outline">
             <Link href={`/${dealerSlug}/contact`}>Contact the dealer</Link>
           </Button>
           {vehicle && (
