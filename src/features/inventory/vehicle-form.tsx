@@ -56,12 +56,23 @@ function toDatetimeLocal(date: Date | null) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/**
+ * `price`/`discountPrice` come back from Prisma as `Decimal` instances,
+ * which Next.js refuses to pass across the Server -> Client Component
+ * boundary ("Only plain objects... Decimal objects are not supported").
+ * Callers serialize them to strings before passing a vehicle in here.
+ */
+type SerializedVehicle = Omit<Vehicle, "price" | "discountPrice"> & {
+  price: string;
+  discountPrice: string | null;
+};
+
 export function VehicleForm({
   vehicle,
   brands,
   bodyTypes,
 }: {
-  vehicle?: Vehicle;
+  vehicle?: SerializedVehicle;
   brands: Brand[];
   bodyTypes: BodyType[];
 }) {
@@ -149,7 +160,7 @@ export function VehicleForm({
               type="number"
               step="0.01"
               required
-              defaultValue={vehicle?.price.toString()}
+              defaultValue={vehicle?.price}
             />
           </div>
           <div className="space-y-1.5">
@@ -159,7 +170,7 @@ export function VehicleForm({
               name="discountPrice"
               type="number"
               step="0.01"
-              defaultValue={vehicle?.discountPrice?.toString() ?? ""}
+              defaultValue={vehicle?.discountPrice ?? ""}
             />
           </div>
           <div className="space-y-1.5">

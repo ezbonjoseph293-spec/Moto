@@ -47,7 +47,17 @@ import {
 import { VEHICLE_STATUS_TRANSITIONS } from "./schema";
 import { BulkPricingDialog } from "./bulk-pricing-dialog";
 
-type VehicleRow = Awaited<ReturnType<typeof listVehicles>>["vehicles"][number];
+/**
+ * `price`/`discountPrice` come back from Prisma as `Decimal` instances,
+ * which Next.js refuses to pass across the Server -> Client Component
+ * boundary ("Only plain objects... Decimal objects are not supported").
+ * The page serializes them to strings before handing vehicles to this
+ * client component — this type reflects that post-serialization shape.
+ */
+type VehicleRow = Omit<
+  Awaited<ReturnType<typeof listVehicles>>["vehicles"][number],
+  "price" | "discountPrice"
+> & { price: string; discountPrice: string | null };
 
 const STATUS_VARIANT: Record<string, "available" | "reserved" | "sold" | "outline"> = {
   AVAILABLE: "available",
@@ -252,7 +262,7 @@ export function VehicleTable({ vehicles }: { vehicles: VehicleRow[] }) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm whitespace-nowrap">
-                    {formatPrice(vehicle.price.toString(), vehicle.currency)}
+                    {formatPrice(vehicle.price, vehicle.currency)}
                   </TableCell>
                   <TableCell className="text-sm">{vehicle.year}</TableCell>
                   <TableCell>

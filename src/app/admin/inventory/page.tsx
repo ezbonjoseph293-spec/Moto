@@ -60,7 +60,13 @@ export default async function AdminInventoryPage({
 
       <VehicleFilters brands={brands} bodyTypes={bodyTypes} />
 
-      <VehicleTable vehicles={vehicles} />
+      <VehicleTable
+        vehicles={vehicles.map((v) => ({
+          ...v,
+          price: v.price.toString(),
+          discountPrice: v.discountPrice?.toString() ?? null,
+        }))}
+      />
 
       <VehiclePagination page={page} totalPages={totalPages} searchParams={sp} />
     </div>

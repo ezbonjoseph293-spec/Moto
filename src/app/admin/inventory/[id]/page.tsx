@@ -103,7 +103,15 @@ export default async function EditVehiclePage({ params }: { params: Promise<{ id
 
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold text-ink">Details</h2>
-        <VehicleForm vehicle={vehicle} brands={brands} bodyTypes={bodyTypes} />
+        <VehicleForm
+          vehicle={{
+            ...vehicle,
+            price: vehicle.price.toString(),
+            discountPrice: vehicle.discountPrice?.toString() ?? null,
+          }}
+          brands={brands}
+          bodyTypes={bodyTypes}
+        />
       </section>
     </div>
   );
