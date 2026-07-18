@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import type { Setting } from "@prisma/client";
+import type { SerializedSetting } from "./schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ const DEFAULT_WHY_CHOOSE_US: WhyChooseUsItem[] = [
   },
 ];
 
-export function HomepageContentForm({ setting }: { setting: Setting }) {
+export function HomepageContentForm({ setting }: { setting: SerializedSetting }) {
   const [state, formAction, isPending] = useActionState(updateHomepageContentAction, initialState);
 
   const items = (setting.whyChooseUsItems as WhyChooseUsItem[] | null) ?? DEFAULT_WHY_CHOOSE_US;

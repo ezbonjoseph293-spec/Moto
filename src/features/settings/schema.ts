@@ -1,4 +1,18 @@
+import type { Setting } from "@prisma/client";
 import { z } from "zod";
+
+/**
+ * `Setting.depositFixedAmount`/`depositPercentage` come back from Prisma as
+ * `Decimal` instances, which Next.js refuses to pass across the Server ->
+ * Client Component boundary ("Only plain objects... Decimal objects are not
+ * supported"). `getSettings()` callers serialize them to strings before
+ * handing a `Setting` row to any client component — this type reflects that
+ * post-serialization shape, and every settings form is typed against it.
+ */
+export type SerializedSetting = Omit<Setting, "depositFixedAmount" | "depositPercentage"> & {
+  depositFixedAmount: string | null;
+  depositPercentage: string | null;
+};
 
 const emptyToUndefined = (v: unknown) => (v === "" || v === undefined ? undefined : v);
 const optionalString = <T extends z.ZodTypeAny>(schema: T) =>
@@ -160,9 +174,7 @@ export const homepageContentSchema = z.object({
 });
 export type HomepageContentInput = z.infer<typeof homepageContentSchema>;
 
-export function homepageContentToWhyChooseUsItems(
-  input: HomepageContentInput,
-): WhyChooseUsItem[] {
+export function homepageContentToWhyChooseUsItems(input: HomepageContentInput): WhyChooseUsItem[] {
   return [
     { title: input.why1Title, body: input.why1Body },
     { title: input.why2Title, body: input.why2Body },

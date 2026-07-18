@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import type { Menu, Setting, Testimonial, UserRole } from "@prisma/client";
+import type { Menu, Testimonial, UserRole } from "@prisma/client";
 import { ArrowRight } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { SerializedSetting } from "./schema";
 import { IdentityForm } from "./identity-form";
 import { HomepageContentForm } from "./homepage-content-form";
 import { ContactForm } from "./contact-form";
@@ -21,7 +22,7 @@ export function SettingsTabs({
   testimonials,
   role,
 }: {
-  setting: Setting;
+  setting: SerializedSetting;
   headerMenu: Menu[];
   footerMenu: Menu[];
   testimonials: Testimonial[];

@@ -26,7 +26,11 @@ export default async function AdminSettingsPage() {
       </div>
 
       <SettingsTabs
-        setting={setting}
+        setting={{
+          ...setting,
+          depositFixedAmount: setting.depositFixedAmount?.toString() ?? null,
+          depositPercentage: setting.depositPercentage?.toString() ?? null,
+        }}
         headerMenu={menus.header}
         footerMenu={menus.footer}
         testimonials={testimonials}

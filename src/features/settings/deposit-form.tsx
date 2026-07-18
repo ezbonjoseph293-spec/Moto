@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import type { Setting } from "@prisma/client";
+import type { SerializedSetting } from "./schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,13 @@ import { updateDepositAction, type FormState } from "./actions";
 
 const initialState: FormState = { ok: false };
 
-export function DepositForm({ setting, onSaved }: { setting: Setting; onSaved?: () => void }) {
+export function DepositForm({
+  setting,
+  onSaved,
+}: {
+  setting: SerializedSetting;
+  onSaved?: () => void;
+}) {
   const [state, formAction, isPending] = useActionState(updateDepositAction, initialState);
   const [depositType, setDepositType] = useState(setting.depositType);
 
@@ -55,7 +61,7 @@ export function DepositForm({ setting, onSaved }: { setting: Setting; onSaved?: 
             type="number"
             step="0.01"
             min="0"
-            defaultValue={setting.depositFixedAmount?.toString() ?? ""}
+            defaultValue={setting.depositFixedAmount ?? ""}
             required
           />
         </div>
@@ -69,7 +75,7 @@ export function DepositForm({ setting, onSaved }: { setting: Setting; onSaved?: 
             step="0.1"
             min="0.1"
             max="100"
-            defaultValue={setting.depositPercentage?.toString() ?? ""}
+            defaultValue={setting.depositPercentage ?? ""}
             required
           />
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { Setting } from "@prisma/client";
+import type { SerializedSetting } from "./schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { updateAnnouncementAction, type FormState } from "./actions";
 
 const initialState: FormState = { ok: false };
 
-export function AnnouncementForm({ setting }: { setting: Setting }) {
+export function AnnouncementForm({ setting }: { setting: SerializedSetting }) {
   const [state, formAction, isPending] = useActionState(updateAnnouncementAction, initialState);
   const [active, setActive] = useState(setting.announcementBarActive);
 

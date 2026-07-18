@@ -36,7 +36,11 @@ export default async function AdminOnboardingPage() {
       </div>
 
       <OnboardingWizard
-        setting={setting}
+        setting={{
+          ...setting,
+          depositFixedAmount: setting.depositFixedAmount?.toString() ?? null,
+          depositPercentage: setting.depositPercentage?.toString() ?? null,
+        }}
         storefrontUrl={storefrontUrl}
         dealershipName={dealership.name}
       />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import type { Setting } from "@prisma/client";
+import type { SerializedSetting } from "./schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,13 @@ import { updateIdentityAction, type FormState } from "./actions";
 
 const initialState: FormState = { ok: false };
 
-export function IdentityForm({ setting, onSaved }: { setting: Setting; onSaved?: () => void }) {
+export function IdentityForm({
+  setting,
+  onSaved,
+}: {
+  setting: SerializedSetting;
+  onSaved?: () => void;
+}) {
   const [state, formAction, isPending] = useActionState(updateIdentityAction, initialState);
   const [brandColor, setBrandColor] = useState(setting.brandColor);
   const [borderRadius, setBorderRadius] = useState(setting.borderRadius);

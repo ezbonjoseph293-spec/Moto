@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { Check, Copy, MessageCircle } from "lucide-react";
-import type { Setting } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import type { SerializedSetting } from "@/features/settings/schema";
 import { IdentityForm } from "@/features/settings/identity-form";
 import { ContactForm } from "@/features/settings/contact-form";
 import { DepositForm } from "@/features/settings/deposit-form";
@@ -19,7 +19,7 @@ export function OnboardingWizard({
   storefrontUrl,
   dealershipName,
 }: {
-  setting: Setting;
+  setting: SerializedSetting;
   storefrontUrl: string;
   dealershipName: string;
 }) {

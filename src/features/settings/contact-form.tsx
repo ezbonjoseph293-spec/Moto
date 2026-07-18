@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import type { Setting } from "@prisma/client";
+import type { SerializedSetting } from "./schema";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,13 @@ import type { BusinessHours, SocialLinks } from "./schema";
 
 const initialState: FormState = { ok: false };
 
-export function ContactForm({ setting, onSaved }: { setting: Setting; onSaved?: () => void }) {
+export function ContactForm({
+  setting,
+  onSaved,
+}: {
+  setting: SerializedSetting;
+  onSaved?: () => void;
+}) {
   const [state, formAction, isPending] = useActionState(updateContactAction, initialState);
 
   useEffect(() => {

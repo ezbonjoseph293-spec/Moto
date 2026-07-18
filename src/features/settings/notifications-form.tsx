@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import type { Setting } from "@prisma/client";
+import type { SerializedSetting } from "./schema";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { updateNotificationsAction, type FormState } from "./actions";
 
 const initialState: FormState = { ok: false };
 
-export function NotificationsForm({ setting }: { setting: Setting }) {
+export function NotificationsForm({ setting }: { setting: SerializedSetting }) {
   const [state, formAction, isPending] = useActionState(updateNotificationsAction, initialState);
   const [email, setEmail] = useState(setting.notifyNewLeadEmail);
   const [sms, setSms] = useState(setting.notifyNewLeadSms);
