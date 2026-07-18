@@ -17,14 +17,32 @@ import { SectionHeading } from "@/components/storefront/section-heading";
 import { TestimonialCard } from "@/components/storefront/testimonial-card";
 import { Button } from "@/components/ui/button";
 import { autoDealerJsonLd, dealerUrl } from "@/lib/seo";
-import type { SocialLinks } from "@/features/settings/schema";
+import type { SocialLinks, WhyChooseUsItem } from "@/features/settings/schema";
 
-const WHY_CHOOSE_US = [
-  { icon: ShieldCheck, title: "Verified inventory", body: "Every listing is inspected and accurately described before it goes live." },
-  { icon: ThumbsUp, title: "Fair, transparent pricing", body: "No hidden fees — the price you see is the price you pay." },
-  { icon: Truck, title: "Nationwide delivery", body: "We can arrange delivery to wherever you are." },
-  { icon: Sparkles, title: "Easy online reservation", body: "Secure your car with a deposit from your phone, in minutes." },
+const WHY_CHOOSE_US_ICONS = [ShieldCheck, ThumbsUp, Truck, Sparkles];
+
+const DEFAULT_WHY_CHOOSE_US: WhyChooseUsItem[] = [
+  {
+    title: "Verified inventory",
+    body: "Every listing is inspected and accurately described before it goes live.",
+  },
+  { title: "Fair, transparent pricing", body: "The price you see is the price you pay." },
+  {
+    title: "Responsive support",
+    body: "Reach us by phone or WhatsApp and get a real answer, fast.",
+  },
+  {
+    title: "Easy online reservation",
+    body: "Secure your car with a deposit from your phone, in minutes.",
+  },
 ];
+
+const DEFAULT_HERO_SUBTITLE =
+  "Browse verified, quality-checked vehicles and secure the one you want with a refundable online deposit — no dealership visit required to hold your car.";
+
+const DEFAULT_CTA_TITLE = "Ready to find your next car?";
+const DEFAULT_CTA_BODY =
+  "Browse the full inventory, filter by what matters to you, and reserve online with a deposit.";
 
 export async function generateMetadata({
   params,
@@ -101,8 +119,7 @@ export default async function StorefrontHomePage({
             {setting?.tagline || "Find your next car, reserved online in minutes"}
           </h1>
           <p className="max-w-xl text-lg text-white/70">
-            Browse verified, quality-checked vehicles and secure the one you want with a
-            refundable online deposit — no dealership visit required to hold your car.
+            {setting?.heroSubtitle || DEFAULT_HERO_SUBTITLE}
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
             <Button asChild size="lg">
@@ -131,8 +148,13 @@ export default async function StorefrontHomePage({
             </Link>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {featured.map((vehicle) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} dealerSlug={dealerSlug} />
+            {featured.map((vehicle, index) => (
+              <VehicleCard
+                key={vehicle.id}
+                vehicle={vehicle}
+                dealerSlug={dealerSlug}
+                priority={index < 2}
+              />
             ))}
           </div>
         </section>
@@ -189,15 +211,23 @@ export default async function StorefrontHomePage({
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading eyebrow="Why us" title={`Why buy from ${dealerName}`} />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {WHY_CHOOSE_US.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="rounded-lg border border-border bg-card p-6 shadow-card">
-                <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-brand/10 text-brand">
-                  <Icon className="size-5" aria-hidden="true" />
-                </div>
-                <h3 className="font-heading text-base font-semibold text-ink">{title}</h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">{body}</p>
-              </div>
-            ))}
+            {((setting?.whyChooseUsItems as WhyChooseUsItem[] | null) ?? DEFAULT_WHY_CHOOSE_US).map(
+              ({ title, body }, index) => {
+                const Icon = WHY_CHOOSE_US_ICONS[index] ?? Sparkles;
+                return (
+                  <div
+                    key={title}
+                    className="rounded-lg border border-border bg-card p-6 shadow-card"
+                  >
+                    <div className="mb-4 flex size-10 items-center justify-center rounded-full bg-brand/10 text-brand">
+                      <Icon className="size-5" aria-hidden="true" />
+                    </div>
+                    <h3 className="font-heading text-base font-semibold text-ink">{title}</h3>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{body}</p>
+                  </div>
+                );
+              },
+            )}
           </div>
         </div>
       </section>
@@ -249,12 +279,9 @@ export default async function StorefrontHomePage({
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="flex flex-col items-center gap-4 rounded-lg bg-ink px-6 py-14 text-center">
           <h2 className="font-heading text-2xl font-bold text-white sm:text-3xl">
-            Ready to find your next car?
+            {setting?.ctaTitle || DEFAULT_CTA_TITLE}
           </h2>
-          <p className="max-w-md text-white/70">
-            Browse the full inventory, filter by what matters to you, and reserve online with a
-            deposit.
-          </p>
+          <p className="max-w-md text-white/70">{setting?.ctaBodyText || DEFAULT_CTA_BODY}</p>
           <Button asChild size="lg" className="mt-2">
             <Link href={`/${dealerSlug}/inventory`}>
               Browse inventory <ArrowRight className="size-4" aria-hidden="true" />

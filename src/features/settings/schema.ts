@@ -143,6 +143,34 @@ export const testimonialSchema = z.object({
 });
 export type TestimonialInput = z.infer<typeof testimonialSchema>;
 
+export type WhyChooseUsItem = { title: string; body: string };
+
+export const homepageContentSchema = z.object({
+  heroSubtitle: optionalString(z.string().trim().max(300)),
+  why1Title: z.string().trim().min(2, "Title is too short.").max(60),
+  why1Body: z.string().trim().min(5, "Add a short description.").max(200),
+  why2Title: z.string().trim().min(2, "Title is too short.").max(60),
+  why2Body: z.string().trim().min(5, "Add a short description.").max(200),
+  why3Title: z.string().trim().min(2, "Title is too short.").max(60),
+  why3Body: z.string().trim().min(5, "Add a short description.").max(200),
+  why4Title: z.string().trim().min(2, "Title is too short.").max(60),
+  why4Body: z.string().trim().min(5, "Add a short description.").max(200),
+  ctaTitle: optionalString(z.string().trim().max(120)),
+  ctaBodyText: optionalString(z.string().trim().max(300)),
+});
+export type HomepageContentInput = z.infer<typeof homepageContentSchema>;
+
+export function homepageContentToWhyChooseUsItems(
+  input: HomepageContentInput,
+): WhyChooseUsItem[] {
+  return [
+    { title: input.why1Title, body: input.why1Body },
+    { title: input.why2Title, body: input.why2Body },
+    { title: input.why3Title, body: input.why3Body },
+    { title: input.why4Title, body: input.why4Body },
+  ];
+}
+
 export const menuItemSchema = z.object({
   location: z.enum(menuLocationValues),
   label: z.string().trim().min(1, "Label is required.").max(60),

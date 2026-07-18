@@ -47,14 +47,16 @@ export default async function PlatformOverviewPage({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-border bg-surface p-4">
-          <div className="text-xs text-muted-foreground">Deposits captured (all dealers)</div>
+          <div className="text-xs text-muted-foreground">
+            Deposits captured (all dealers, UGX equivalent)
+          </div>
           <div className="mt-1 font-heading text-xl font-bold text-ink">
             {formatPrice(metrics.depositsVolume, "UGX")}
           </div>
           <div className="text-xs text-muted-foreground">{metrics.depositsCount} payments</div>
         </div>
         <div className="rounded-lg border border-border bg-surface p-4">
-          <div className="text-xs text-muted-foreground">Subscription revenue</div>
+          <div className="text-xs text-muted-foreground">Subscription revenue (UGX equivalent)</div>
           <div className="mt-1 font-heading text-xl font-bold text-ink">
             {formatPrice(metrics.subscriptionRevenue, "UGX")}
           </div>

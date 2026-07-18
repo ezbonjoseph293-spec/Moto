@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   }
 
   const folder = `dealers/${user.dealershipId}/${parsed.data.purpose}`;
-  const signature = signCloudinaryUpload(folder);
+  const signature = signCloudinaryUpload(folder, parsed.data.purpose);
 
   return NextResponse.json(signature);
 }

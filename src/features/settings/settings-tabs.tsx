@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IdentityForm } from "./identity-form";
+import { HomepageContentForm } from "./homepage-content-form";
 import { ContactForm } from "./contact-form";
 import { DepositForm } from "./deposit-form";
 import { AnnouncementForm } from "./announcement-form";
@@ -30,6 +31,7 @@ export function SettingsTabs({
     <Tabs defaultValue="branding">
       <TabsList className="flex-wrap">
         <TabsTrigger value="branding">Branding</TabsTrigger>
+        <TabsTrigger value="homepage">Homepage content</TabsTrigger>
         <TabsTrigger value="contact">Contact</TabsTrigger>
         <TabsTrigger value="navigation">Navigation</TabsTrigger>
         <TabsTrigger value="announcement">Announcement</TabsTrigger>
@@ -40,6 +42,9 @@ export function SettingsTabs({
 
       <TabsContent value="branding">
         <IdentityForm setting={setting} />
+      </TabsContent>
+      <TabsContent value="homepage">
+        <HomepageContentForm setting={setting} />
       </TabsContent>
       <TabsContent value="contact">
         <ContactForm setting={setting} />

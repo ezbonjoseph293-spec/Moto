@@ -114,8 +114,13 @@ export default async function InventoryPage({
             />
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-              {vehicles.map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} dealerSlug={dealerSlug} />
+              {vehicles.map((vehicle, index) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  dealerSlug={dealerSlug}
+                  priority={index < 2}
+                />
               ))}
             </div>
           )}

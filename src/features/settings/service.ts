@@ -1,14 +1,16 @@
 import { forDealership } from "@/features/tenancy";
 import { recordAuditLog } from "@/lib/audit";
-import type {
-  AnnouncementInput,
-  ContactInput,
-  DepositInput,
-  IdentityInput,
-  MenuItemInput,
-  NotificationsInput,
-  PageContentInput,
-  TestimonialInput,
+import {
+  homepageContentToWhyChooseUsItems,
+  type AnnouncementInput,
+  type ContactInput,
+  type DepositInput,
+  type HomepageContentInput,
+  type IdentityInput,
+  type MenuItemInput,
+  type NotificationsInput,
+  type PageContentInput,
+  type TestimonialInput,
 } from "./schema";
 
 export async function getSettings(dealershipId: string) {
@@ -186,6 +188,37 @@ export async function updateIdentity(dealershipId: string, actorId: string, inpu
     dealershipId,
     actorId,
     action: "settings.identity.updated",
+    entityType: "Setting",
+    entityId: setting.id,
+    before,
+    after: setting,
+  });
+
+  return setting;
+}
+
+export async function updateHomepageContent(
+  dealershipId: string,
+  actorId: string,
+  input: HomepageContentInput,
+) {
+  const db = forDealership(dealershipId);
+  const before = await db.setting.findUniqueOrThrow({ where: { dealershipId } });
+
+  const setting = await db.setting.update({
+    where: { dealershipId },
+    data: {
+      heroSubtitle: input.heroSubtitle ?? null,
+      whyChooseUsItems: homepageContentToWhyChooseUsItems(input),
+      ctaTitle: input.ctaTitle ?? null,
+      ctaBodyText: input.ctaBodyText ?? null,
+    },
+  });
+
+  await recordAuditLog({
+    dealershipId,
+    actorId,
+    action: "settings.homepage_content.updated",
     entityType: "Setting",
     entityId: setting.id,
     before,

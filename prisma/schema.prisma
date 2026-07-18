@@ -338,8 +338,8 @@ model Subscription {
   /// effect only once their payment is confirmed — these carry the request
   /// across the Flutterwave checkout redirect, since the webhook only has a
   /// tx_ref to look up, not the in-progress form state.
-  pendingPlanId           String?
-  pendingBillingInterval  BillingInterval?
+  pendingPlanId          String?
+  pendingBillingInterval BillingInterval?
 
   flutterwaveCustomerId     String?
   flutterwaveSubscriptionId String?
@@ -932,6 +932,12 @@ model Setting {
   announcementBarText   String?
   announcementBarActive Boolean @default(false)
   homepageSections      Json?
+
+  // Homepage copy (falls back to sensible platform defaults when unset)
+  heroSubtitle     String? @db.Text
+  whyChooseUsItems Json?
+  ctaTitle         String?
+  ctaBodyText      String? @db.Text
 
   // Deposit / reservation policy
   depositType        String   @default("FIXED") // FIXED | PERCENTAGE

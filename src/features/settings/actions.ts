@@ -7,6 +7,7 @@ import {
   announcementSchema,
   contactSchema,
   depositSchema,
+  homepageContentSchema,
   identitySchema,
   menuItemSchema,
   notificationsSchema,
@@ -41,6 +42,23 @@ export async function updateIdentityAction(
   revalidatePath("/[dealerSlug]", "layout");
 
   return { ok: true, message: "Branding saved." };
+}
+
+export async function updateHomepageContentAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireDealershipStaff();
+  const parsed = homepageContentSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  await settingsService.updateHomepageContent(user.dealershipId, user.id, parsed.data);
+  revalidatePath("/admin/settings");
+  revalidatePath("/[dealerSlug]", "page");
+
+  return { ok: true, message: "Homepage content saved." };
 }
 
 export async function updateContactAction(

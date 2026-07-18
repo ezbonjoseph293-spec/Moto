@@ -5,6 +5,7 @@ type CloudinarySignature = {
   apiKey: string;
   timestamp: number;
   folder: string;
+  allowedFormats: string;
   signature: string;
 };
 
@@ -39,6 +40,7 @@ export async function uploadToCloudinary(
   form.append("timestamp", String(sig.timestamp));
   form.append("signature", sig.signature);
   form.append("folder", sig.folder);
+  form.append("allowed_formats", sig.allowedFormats);
 
   const uploadRes = await fetch(
     `https://api.cloudinary.com/v1_1/${sig.cloudName}/${resourceType}/upload`,

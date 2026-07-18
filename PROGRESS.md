@@ -640,4 +640,110 @@ mode) was presented and approved before any code was written, per the Stage
   still reachable), and reverted cleanly afterward. `lint`, `typecheck`, and
   `next build` (44 routes including the 4 new ones) are all clean.
 
-**Next:** Stage 9 — Hardening, Polish & Handover Docs.
+## Stage 9 — Hardening, Polish & Handover Docs ✅
+
+- **Audit method**: three read-only agents swept the codebase in parallel
+  (hardcoded dealer-facing strings/TODOs, security posture, performance/
+  accessibility) against the shipped Stage 0–8 code, plus a manual
+  `npm audit`, full test run, and a direct read of `next.config.ts`/
+  `middleware.ts`/cron routes/Cloudinary signing.
+- **Security fixes**:
+  - `next.config.ts` gained a `headers()` config: `X-Frame-Options`,
+    `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`,
+    `Strict-Transport-Security`, and a `Content-Security-Policy` scoped to
+    `self` + Cloudinary images + Flutterwave's checkout/API domains (needed
+    for the deposit/subscription payment flow) — there was no headers config
+    at all before this stage.
+  - `src/lib/env.ts`: `CRON_SECRET` and `FLUTTERWAVE_WEBHOOK_SECRET_HASH`
+    (once `FLUTTERWAVE_SECRET_KEY` is set) are now required when
+    `NODE_ENV=production`, via a `superRefine` on top of the base schema.
+    Previously both were optional everywhere so the cron routes and webhook
+    route could silently run unauthenticated in a production deploy that
+    forgot to set them — the routes' own "skip the check if unset" logic
+    (kept deliberately for local-dev testability) is unchanged, but
+    `getEnv()` itself now refuses to boot in prod without these set.
+  - `getReservationStatusAction` (`src/features/payments/actions.ts`) — the
+    one public Server Action that had no rate limiting — now applies the
+    same IP-keyed `rateLimit()` used elsewhere (60/10min, generous since the
+    poller calls it every 3s for ~2 minutes); returns `null` (the poller's
+    existing "still confirming" state) rather than a new error shape, so no
+    caller changes were needed beyond the one call site.
+  - `src/lib/cloudinary.ts`: `resource_type` was found to be unenforceable
+    via Cloudinary's signature (it's part of the upload URL, never a signed
+    parameter), meaning a signature issued for e.g. `vehicle-images` could
+    previously be replayed against a different resource-type endpoint to
+    upload an arbitrary file type into that folder. Fixed by signing
+    `allowed_formats` instead (a parameter Cloudinary does enforce
+    server-side against the signature) — a per-`purpose` allowlist
+    (`jpg,jpeg,png,webp[,svg]` for images, `pdf` for documents, `mp4,mov,webm`
+    for the as-yet-unused video-upload purpose). Folder-level tenant scoping
+    (a dealer can't write into another dealer's folder) was already correct
+    and untouched.
+  - `npm audit --production`: only 2 moderate, transitive `postcss`
+    advisories via Next's own bundled copy — no fix available without a
+    `next` downgrade the advisory itself suggests incorrectly; tracked in
+    `DEPLOYMENT_CHECKLIST.md` as a recurring check instead of "fixed" here.
+- **Performance fixes**: `images.formats: ["image/avif", "image/webp"]`
+  added to `next.config.ts`. `VehicleCard` gained a `priority` prop (passed
+  as `index < 2` from the homepage's featured-vehicles grid and the
+  inventory listing grid) so the first couple of above-the-fold cards get a
+  real LCP hint instead of every card lazy-loading uniformly.
+- **Content sweep**: the audit's most substantive finding was that Stage 5's
+  homepage had four content blocks (hero subtitle, four "why choose us"
+  cards, and the closing CTA banner's title/body) hardcoded in
+  `page.tsx` — including specific factual claims ("no hidden fees",
+  "nationwide delivery") no dealer had actually agreed to make. Fixed by
+  adding `Setting.heroSubtitle`/`whyChooseUsItems`(JSON)/`ctaTitle`/
+  `ctaBodyText` (one migration), a new **Homepage content** tab in
+  `/admin/settings` (`src/features/settings/homepage-content-form.tsx`,
+  same `useActionState` + audit-logged-service pattern as every other
+  settings tab), and the storefront now reads these with the previous
+  static copy demoted to a fallback default when a dealer hasn't
+  customized it yet. The platform-metrics "UGX" labels
+  (`src/app/platform/page.tsx`) were relabeled "UGX equivalent" — a real
+  finding (these are unconverted sums across dealers who could in principle
+  use different currencies) but full multi-currency normalization is
+  Phase 2 scope, not a Stage 9 fix.
+  `Setting.homepageSections` (a Stage 1 schema field for the Phase 2
+  drag-and-drop homepage builder) remains intentionally unused — that's
+  the Phase 2 feature itself, not a Stage 9 gap.
+- **Accessibility/loading-state findings**: the audit's icon-only-button and
+  spinner-vs-skeleton concerns turned out to already be handled correctly
+  in the current code (`vehicle-image-manager.tsx`'s cover/delete buttons
+  already have `aria-label`s; the few spinner icons found are scoped to
+  button-busy states during async uploads, not page/section loaders) — no
+  changes needed, confirmed by direct inspection rather than taken on
+  faith from the audit alone.
+- **Test pass**: full suite is 71 tests across 9 files, all passing. The
+  full-run-vs-isolated-file discrepancy from Stages 6/8 (some payment/
+  subscription tests time out under Vitest's default 30s when run alongside
+  the rest of the suite, but pass cleanly with more headroom) reproduced
+  again here under today's Supabase session-pooler latency — confirmed
+  environmental, not a regression, by rerunning the full suite with
+  `--testTimeout=60000` (all 71 pass) and rerunning the affected files in
+  isolation at the default timeout (also pass). No code in
+  `src/features/payments/service.ts` was touched this stage.
+- **Docs**: rewrote `README.md`'s deployment section (Vercel + managed
+  Postgres mechanics, migrations-on-build, backups, the new security
+  headers/CSP) and added three new top-level documents:
+  `ADMIN_GUIDE.md` (plain-language dealer manual — add a car, change
+  branding/homepage content, edit a policy, handle a deposit, respond to a
+  lead, manage team, billing), `PLATFORM_GUIDE.md` (operator manual —
+  onboarding, plan management, the subscription lifecycle, manual controls,
+  impersonation, handling a deposit dispute), and
+  `DEPLOYMENT_CHECKLIST.md` (a literal pre-launch checklist covering
+  secrets, database, third-party services, cron jobs, and a verification
+  pass).
+- Verified end-to-end: `lint`, `typecheck`, `build` (all 45 routes) all
+  clean; full test suite green under a pooler-appropriate timeout; manually
+  re-read every file this stage touched to confirm the security-header CSP
+  doesn't block the storefront/admin's actual runtime dependencies
+  (Cloudinary images, Flutterwave checkout) before shipping it.
+
+**Platform status: Phase 1 (Sellable MVP) complete.** Phase 2 (Growth Suite)
+modules — blog CMS, customer accounts/favorites, trade-in and finance
+workflows, appointments/service bookings, marketing suite, analytics
+dashboards, multi-branch, i18n/multi-currency, the homepage drag-and-drop
+builder, custom domains, cross-dealer marketplace — remain to be built one
+module, one session, one commit at a time, per
+[staged-build-plan-claude-code.md](staged-build-plan-claude-code.md#after-launch-phase-2-stages-when-ready).

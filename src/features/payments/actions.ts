@@ -55,6 +55,12 @@ export type ReservationStatusResult = Awaited<
 
 /** Polled from the /reserve/callback client component after Flutterwave redirects back. */
 export async function getReservationStatusAction(txRef: string): Promise<ReservationStatusResult> {
+  const ip = await clientIp();
+  // Generous limit — the poller calls this every 3s for up to ~2 minutes on
+  // its own; this guards against a client polling far outside that pattern.
+  const limited = rateLimit(`reservation-status:${ip}`, 60, 10 * 60);
+  if (!limited.success) return null;
+
   return paymentsService.getReservationStatusByTxRef(txRef);
 }
 

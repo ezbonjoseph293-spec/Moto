@@ -15,10 +15,12 @@ export function VehicleCard({
   vehicle,
   dealerSlug,
   className,
+  priority = false,
 }: {
   vehicle: VehicleCardData;
   dealerSlug: string;
   className?: string;
+  priority?: boolean;
 }) {
   const cover = vehicle.images[0];
 
@@ -37,6 +39,7 @@ export function VehicleCard({
             alt={cover.altText || vehicle.title}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+            priority={priority}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (

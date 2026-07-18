@@ -55,6 +55,32 @@ export const envSchema = z.object({
   EMAIL_FROM: optionalEnvString(z.string().min(1)),
 });
 
+/**
+ * The cron routes and the Flutterwave webhook only enforce their secret
+ * check when the corresponding env var is set — deliberately, so those
+ * features stay testable in local dev without provisioning one. In
+ * production, an unset secret would silently leave those endpoints open to
+ * the internet instead, so require them once NODE_ENV is "production".
+ */
+const secretsRequiredInProduction = envSchema.superRefine((env, ctx) => {
+  if (env.NODE_ENV !== "production") return;
+
+  if (!env.CRON_SECRET) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["CRON_SECRET"],
+      message: "CRON_SECRET is required in production (cron routes would otherwise be public)",
+    });
+  }
+  if (!env.FLUTTERWAVE_WEBHOOK_SECRET_HASH && env.FLUTTERWAVE_SECRET_KEY) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["FLUTTERWAVE_WEBHOOK_SECRET_HASH"],
+      message: "FLUTTERWAVE_WEBHOOK_SECRET_HASH is required once Flutterwave is configured",
+    });
+  }
+});
+
 export type Env = z.infer<typeof envSchema>;
 
 let cached: Env | undefined;
@@ -67,7 +93,7 @@ let cached: Env | undefined;
 export function getEnv(): Env {
   if (cached) return cached;
 
-  const result = envSchema.safeParse(process.env);
+  const result = secretsRequiredInProduction.safeParse(process.env);
   if (!result.success) {
     const details = result.error.issues
       .map((issue) => `  - ${issue.path.join(".")}: ${issue.message}`)
