@@ -499,6 +499,24 @@ export async function listReservations(
   });
 }
 
+export async function getDepositOverviewStats(dealershipId: string) {
+  const db = forDealership(dealershipId);
+  const [activeCount, revenue] = await Promise.all([
+    db.reservation.count({ where: { status: "ACTIVE" } }),
+    db.paymentTransaction.aggregate({
+      where: { purpose: "DEPOSIT", status: "SUCCESSFUL" },
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  return {
+    activeCount,
+    depositsCount: revenue._count._all,
+    totalRevenue: revenue._sum.amount?.toString() ?? "0",
+  };
+}
+
 export async function getReservation(dealershipId: string, id: string) {
   const db = forDealership(dealershipId);
   return db.reservation.findUnique({

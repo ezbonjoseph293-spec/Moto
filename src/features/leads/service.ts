@@ -160,6 +160,15 @@ export async function listLeads(dealershipId: string, filters: LeadListFilters =
   return { leads, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 }
 
+export async function getLeadStats(dealershipId: string) {
+  const db = forDealership(dealershipId);
+  const [total, newCount] = await Promise.all([
+    db.lead.count(),
+    db.lead.count({ where: { status: "NEW" } }),
+  ]);
+  return { total, newCount };
+}
+
 export async function getLead(dealershipId: string, id: string) {
   const db = forDealership(dealershipId);
   return db.lead.findUnique({

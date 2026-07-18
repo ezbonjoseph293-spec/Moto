@@ -77,6 +77,30 @@ export async function listVehicles(dealershipId: string, filters: VehicleListFil
   return { vehicles, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 }
 
+export async function getInventoryOverviewStats(dealershipId: string) {
+  const db = forDealership(dealershipId);
+  const [byStatus, totalViews] = await Promise.all([
+    db.vehicle.groupBy({ by: ["status"], _count: { _all: true } }),
+    db.vehicle.aggregate({ _sum: { viewCount: true } }),
+  ]);
+
+  const counts: Record<VehicleStatus, number> = {
+    DRAFT: 0,
+    AVAILABLE: 0,
+    RESERVED: 0,
+    SOLD: 0,
+    ARCHIVED: 0,
+    HIDDEN: 0,
+  };
+  for (const row of byStatus) counts[row.status] = row._count._all;
+
+  return {
+    total: Object.values(counts).reduce((sum, n) => sum + n, 0),
+    byStatus: counts,
+    totalViews: totalViews._sum.viewCount ?? 0,
+  };
+}
+
 export async function getVehicle(dealershipId: string, id: string) {
   const db = forDealership(dealershipId);
   return db.vehicle.findUniqueOrThrow({
