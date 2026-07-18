@@ -526,4 +526,118 @@ mode) was presented and approved before any code was written, per the Stage
   was covered by adding it to `DEALER_OWNED_MODELS` and exercising it in the
   smoke test rather than a new isolation-test file).
 
-**Next:** Stage 8 — Subscriptions & Platform Admin.
+## Stage 8 — Subscriptions & Platform Admin ✅
+
+- **Billing model decision** (presented and approved before building): Flutterwave's
+  MoMo/Airtel rails can't silently auto-charge like tokenized card billing, so
+  recurring billing here is "invoice + pay-now link" — the dunning cron marks
+  a period due and reminds the dealer by email/SMS with a link to
+  `/admin/billing`; paying (the same Standard checkout Stage 6 built for
+  deposits) is what actually extends the period. Identical flow across MoMo,
+  Airtel, and card; no card tokenization was built.
+- **Schema**: the Stage 1 schema already had `Plan`/`Subscription`/
+  `PaymentTransaction.purpose: SUBSCRIPTION` pre-built. Two migrations added
+  what dunning needed: `Subscription.pastDueSince`/`dunningStage`/
+  `lastDunningSentAt` (grace-period/reminder bookkeeping) and
+  `pendingPlanId`/`pendingBillingInterval` (carries a dealer's plan/interval
+  choice across the Flutterwave checkout redirect, since the webhook only has
+  a `tx_ref` to look the transaction up by — applied on settlement, discarded
+  on failure).
+- **`src/features/payments/service.ts` extended** (not a new feature folder —
+  this is the same money/webhook state machine Stage 6 built, now handling a
+  second `PaymentPurpose`): `initiateSubscriptionPayment()` (checkout for the
+  current or a newly chosen plan/interval), `settleVerifiedSubscriptionPayment()`
+  (activates the period, applies any pending plan change, clears dunning
+  state), `markSubscriptionPaymentFailed()`, and `runSubscriptionDunning()` —
+  the per-dealership state machine: `TRIALING`/`ACTIVE` → `PAST_DUE` the
+  moment `trialEndsAt`/`currentPeriodEnd` passes (`Dealership.status` →
+  `TRIAL_EXPIRED`) → reminders at 1/3/5 days past due → `SUSPENDED` at the
+  7-day grace deadline (`Dealership.status` → `SUSPENDED`, storefront and
+  admin gate below kick in) → `CANCELLED` after 30 further unresolved days.
+  `processFlutterwaveWebhookEvent()`'s dispatcher (previously hard-coded to
+  reservations) now branches on `txn.purpose` before routing to the
+  deposit or subscription settle/fail path — the reservation branch is
+  untouched.
+- **Onboarding** (`src/features/onboarding/service.ts`) now creates a
+  `Subscription` row (`TRIALING`, cheapest active `Plan`, `trialEndsAt` = now
+  + that plan's `trialDays`) in the same transaction as the `Dealership` —
+  previously only `prisma/seed.ts` did this, so a real signup had no
+  subscription at all.
+- **Dunning cron** (`/api/cron/subscription-dunning`, `vercel.json` every 6h,
+  same `CRON_SECRET`-guarded pattern as Stages 4/6) loops every dealership
+  through `runSubscriptionDunning()`.
+- **`src/features/platform/`** (new feature folder): `listDealers`/
+  `getDealerDetail` (dealers table + detail with subscription/plan/staff/
+  payment history), `getPlatformMetrics` (dealer counts by status, trial/
+  active/past-due subscription counts, deposits volume, subscription
+  revenue), and manual controls — `extendDealerTrial`, `suspendDealer`,
+  `reactivateDealer`, `changeDealerPlan` — all audit-logged.
+- **Impersonation** (`src/features/platform/impersonation.ts`,
+  `src/lib/impersonation-token.ts`): no impersonation mechanism existed
+  before this stage. Built on a second NextAuth Credentials provider
+  (`id: "impersonate"`, `src/lib/auth.ts`) that never appears on the login
+  form — it only accepts a ~20-second HMAC-signed one-shot token minted
+  server-side by `startImpersonationAction`/`exitImpersonationAction`.
+  Starting impersonation issues the target dealer user a real new
+  `RefreshToken` row and stamps `impersonatorId`/`impersonatorName`/
+  `impersonatorRtid` onto the JWT (`src/types/next-auth.d.ts`,
+  `auth.config.ts` callbacks); exiting restores the platform admin's own
+  session using their still-valid original `rtid` — no second sign-in — and
+  revokes the impersonated session's refresh token. Both directions are
+  audit-logged. `requireRole()` now also surfaces `impersonatedBy` (read off
+  the session, no extra DB call) so `AdminLayout` can render an
+  `ImpersonationBanner` with an "Exit" button.
+- **`/admin/billing`**: current plan/status/trial-or-renewal date, a
+  grace-period banner while `PAST_DUE`, a suspended banner while `SUSPENDED`,
+  a plan/interval picker that starts a Flutterwave checkout
+  (`BillingPayForm`), and payment history. `/admin/billing/callback` polls
+  status same as Stage 6's `/reserve/callback` pattern. New `adminNavItems`
+  entry.
+- **Pay-now wall** (`src/components/layout/admin-billing-gate.tsx`): a client
+  component (needs `usePathname()` to exempt `/admin/billing` itself, which a
+  server layout can't cleanly read) that replaces all other `/admin/**`
+  content with a "pay now" block whenever `Dealership.status` is `SUSPENDED`/
+  `CANCELLED`.
+- **Storefront suspension gate**: `[dealerSlug]/layout.tsx` now short-circuits
+  to a bare "temporarily unavailable" page for `SUSPENDED`/`CANCELLED`
+  dealerships, before any of the normal header/footer chrome renders.
+- **`/platform`**: overview page combines platform metrics with a searchable
+  dealers table (status/plan/subscription); `/platform/dealers/[id]` adds
+  per-dealer subscription detail, payment history, the manual-control forms,
+  and a per-staff-member "Impersonate" button.
+- Found and fixed a real bug while smoke-testing against the dev server (not
+  a test artifact): the dealer-detail page passed raw `Plan` rows (Decimal
+  `priceMonthly`/`priceYearly` fields) into the client-side
+  `DealerActionsForm`, which Next.js rejects — "Only plain objects can be
+  passed to Client Components... Decimal objects are not supported." Fixed
+  by mapping to `{id, name}` before passing, matching the pattern
+  `admin/billing/page.tsx` already used for `BillingPayForm`.
+- **Tests** (`src/features/payments/subscription.test.ts`, 14 new, real
+  database): checkout creation and its Flutterwave-rejection cleanup path;
+  webhook settlement (activates + applies a pending plan/interval change),
+  `charge.failed` (leaves subscription status alone, never calls `verify`),
+  and replay idempotency; all four `runSubscriptionDunning()` transitions
+  (trial→past-due, reminder-without-suspending, suspend-at-grace-deadline,
+  cancel-after-long-suspension); all four platform manual controls plus
+  dealer listing/metrics. `src/lib/impersonation-token.test.ts` (4 new):
+  sign/verify round-trip, tamper rejection, expiry, malformed input.
+  `require-role.test.ts` updated for the new `impersonatedBy` field plus one
+  new case exercising it. Total suite: 52 → 70 tests, all passing (isolated
+  from the rest of the suite to control for this environment's documented
+  Supabase-pooler flakiness — confirmed by rerunning with a higher
+  transaction timeout that every failure was pooler contention, not logic;
+  raised `settleVerifiedSubscriptionPayment`'s `$transaction` timeout/maxWait
+  to match Stage 6's fix for the same class of issue).
+- Verified end-to-end against the seeded database with the dev server
+  running and real cookie-jar logins (no browser needed): `/admin/billing`
+  and `/platform` render real seeded plan/subscription/dealer data for the
+  seeded `OWNER` and `PLATFORM_ADMIN`; the full impersonation round trip
+  (start → dealer session with `impersonatorId` set → admin banner renders →
+  exit → restored admin session with the claims cleared) driven directly
+  through NextAuth's `/api/auth/callback/impersonate` endpoint; flipping a
+  seeded dealership to `SUSPENDED` confirmed the storefront "temporarily
+  unavailable" page, the admin pay-now wall (with `/admin/billing` itself
+  still reachable), and reverted cleanly afterward. `lint`, `typecheck`, and
+  `next build` (44 routes including the 4 new ones) are all clean.
+
+**Next:** Stage 9 — Hardening, Polish & Handover Docs.

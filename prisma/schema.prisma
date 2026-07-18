@@ -325,6 +325,22 @@ model Subscription {
   currentPeriodEnd   DateTime?
   cancelAtPeriodEnd  Boolean            @default(false)
 
+  /// Set the moment the subscription first becomes PAST_DUE (trial lapsed or
+  /// a renewal payment was never made). The dunning cron computes days-past-due
+  /// off this to decide reminder timing and the eventual suspend.
+  pastDueSince      DateTime?
+  /// How many dunning reminders have been sent for the current PAST_DUE
+  /// episode (0 = none yet). Reset to 0 whenever a payment succeeds.
+  dunningStage      Int       @default(0)
+  lastDunningSentAt DateTime?
+
+  /// A dealer choosing a different plan/interval on the billing page takes
+  /// effect only once their payment is confirmed — these carry the request
+  /// across the Flutterwave checkout redirect, since the webhook only has a
+  /// tx_ref to look up, not the in-progress form state.
+  pendingPlanId           String?
+  pendingBillingInterval  BillingInterval?
+
   flutterwaveCustomerId     String?
   flutterwaveSubscriptionId String?
 

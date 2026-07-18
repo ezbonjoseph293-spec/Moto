@@ -56,6 +56,21 @@ export async function createDealership(
       },
     });
 
+    const plan = await tx.plan.findFirst({
+      where: { isActive: true },
+      orderBy: { priceMonthly: "asc" },
+    });
+    if (plan) {
+      await tx.subscription.create({
+        data: {
+          dealershipId: dealership.id,
+          planId: plan.id,
+          status: "TRIALING",
+          trialEndsAt: new Date(Date.now() + plan.trialDays * 24 * 60 * 60 * 1000),
+        },
+      });
+    }
+
     return { dealership, user };
   });
 

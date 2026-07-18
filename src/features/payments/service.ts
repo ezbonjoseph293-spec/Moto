@@ -8,7 +8,11 @@ import { sendSms } from "@/lib/sms";
 import { logger } from "@/lib/logger";
 import { getEnv } from "@/lib/env";
 import { formatPrice } from "@/lib/format";
-import type { ReserveVehicleInput, reservationStatusValues } from "./schema";
+import type {
+  InitiateSubscriptionPaymentInput,
+  ReserveVehicleInput,
+  reservationStatusValues,
+} from "./schema";
 
 type ReservationStatusValue = (typeof reservationStatusValues)[number];
 
@@ -197,7 +201,7 @@ export async function processFlutterwaveWebhookEvent(payload: WebhookEvent): Pro
     where: { providerRef: txRef },
     include: { reservation: true },
   });
-  if (!txn || !txn.reservation) {
+  if (!txn || (!txn.reservation && !txn.subscriptionId)) {
     logger.warn({ txRef }, "flutterwave.webhook_unknown_tx_ref");
     return;
   }
@@ -206,8 +210,14 @@ export async function processFlutterwaveWebhookEvent(payload: WebhookEvent): Pro
     return;
   }
 
+  const isSubscription = txn.purpose === "SUBSCRIPTION";
+
   if (payload.event === "charge.failed") {
-    await markPaymentFailed(txn.dealershipId, txn.id, txn.reservationId!);
+    if (isSubscription) {
+      await markSubscriptionPaymentFailed(txn.dealershipId, txn.id, txn.subscriptionId!);
+    } else {
+      await markPaymentFailed(txn.dealershipId, txn.id, txn.reservationId!);
+    }
     return;
   }
 
@@ -225,11 +235,19 @@ export async function processFlutterwaveWebhookEvent(payload: WebhookEvent): Pro
 
   if (!isValid) {
     logger.error({ txRef, verified }, "flutterwave.webhook_verification_failed");
-    await markPaymentFailed(txn.dealershipId, txn.id, txn.reservationId!);
+    if (isSubscription) {
+      await markSubscriptionPaymentFailed(txn.dealershipId, txn.id, txn.subscriptionId!);
+    } else {
+      await markPaymentFailed(txn.dealershipId, txn.id, txn.reservationId!);
+    }
     return;
   }
 
-  await settleVerifiedPayment(txn.dealershipId, txn.id, txn.reservationId!, verified.raw);
+  if (isSubscription) {
+    await settleVerifiedSubscriptionPayment(txn.dealershipId, txn.id, txn.subscriptionId!);
+  } else {
+    await settleVerifiedPayment(txn.dealershipId, txn.id, txn.reservationId!, verified.raw);
+  }
 }
 
 async function markPaymentFailed(dealershipId: string, txnId: string, reservationId: string) {
@@ -608,4 +626,409 @@ export async function getReservationHistory(dealershipId: string, reservationId:
     orderBy: { createdAt: "asc" },
     include: { actor: { select: { name: true, email: true } } },
   });
+}
+
+// ============================================================================
+// Subscriptions & dealer billing
+//
+// Flutterwave's MoMo/Airtel rails can't silently auto-charge a saved card the
+// way Stripe-style tokenized billing can, so renewals here are "invoice +
+// pay-now link": the dunning cron below marks a period due and reminds the
+// dealer by email/SMS with a link to /admin/billing, where paying (via the
+// same Standard checkout used for deposits) is what actually extends the
+// period. This works identically across MoMo, Airtel, and card.
+// ============================================================================
+
+const GRACE_PERIOD_DAYS = 7;
+const DUNNING_REMINDER_DAYS = [1, 3, 5] as const; // days past due -> dunningStage 1, 2, 3
+const AUTO_CANCEL_AFTER_SUSPENDED_DAYS = 30;
+
+function billingIntervalDays(interval: "MONTHLY" | "YEARLY"): number {
+  return interval === "YEARLY" ? 365 : 30;
+}
+
+function daysSince(date: Date, now: Date): number {
+  return (now.getTime() - date.getTime()) / (24 * 60 * 60 * 1000);
+}
+
+export function computeSubscriptionAmount(
+  plan: Pick<{ priceMonthly: unknown; priceYearly: unknown }, "priceMonthly" | "priceYearly">,
+  billingInterval: "MONTHLY" | "YEARLY",
+): number {
+  return Number(billingInterval === "YEARLY" ? plan.priceYearly : plan.priceMonthly);
+}
+
+async function notifyDealerBilling(
+  dealershipId: string,
+  type:
+    | "SUBSCRIPTION_TRIAL_ENDING"
+    | "SUBSCRIPTION_PAST_DUE"
+    | "SUBSCRIPTION_SUSPENDED"
+    | "PAYMENT_FAILED"
+    | "SYSTEM",
+  title: string,
+  message: string,
+) {
+  const db = forDealership(dealershipId);
+  const setting = await db.setting.findUnique({ where: { dealershipId } });
+
+  await db.notification.create({
+    data: { dealershipId, type, title, message, link: "/admin/billing" },
+  });
+
+  if (setting?.email) {
+    await sendEmail({
+      to: setting.email,
+      subject: title,
+      html: `<p>${message}</p><p><a href="/admin/billing">Go to Billing</a></p>`,
+    });
+  }
+  if (setting?.phonePrimary) {
+    await sendSms({ to: setting.phonePrimary, message: `${title}: ${message}` });
+  }
+}
+
+export type InitiateSubscriptionPaymentResult =
+  | { ok: true; checkoutUrl: string }
+  | { ok: false; error: string };
+
+/**
+ * Starts a Flutterwave hosted checkout for the dealer's current (or a newly
+ * chosen) plan/interval. The plan/interval change only actually applies once
+ * the webhook confirms payment (settleVerifiedSubscriptionPayment) — stored
+ * meanwhile on Subscription.pendingPlanId/pendingBillingInterval since the
+ * webhook only has the tx_ref to look the transaction up by.
+ */
+export async function initiateSubscriptionPayment(
+  dealershipId: string,
+  input: InitiateSubscriptionPaymentInput,
+  customer: { name: string; email: string; phone?: string },
+): Promise<InitiateSubscriptionPaymentResult> {
+  const db = forDealership(dealershipId);
+  const subscription = await db.subscription.findUnique({ where: { dealershipId } });
+  if (!subscription) return { ok: false, error: "No subscription found for this dealership." };
+
+  const platform = forPlatform();
+  const plan = await platform.plan.findUnique({ where: { id: input.planId } });
+  if (!plan || !plan.isActive) return { ok: false, error: "That plan is not available." };
+
+  const amount = computeSubscriptionAmount(plan, input.billingInterval);
+  if (amount <= 0) return { ok: false, error: "This plan has no billable price." };
+
+  const txRef = `sub_${subscription.id}_${Date.now()}`;
+
+  await db.$transaction([
+    db.subscription.update({
+      where: { dealershipId },
+      data: { pendingPlanId: plan.id, pendingBillingInterval: input.billingInterval },
+    }),
+    db.paymentTransaction.create({
+      data: {
+        dealershipId,
+        subscriptionId: subscription.id,
+        purpose: "SUBSCRIPTION",
+        provider: "FLUTTERWAVE",
+        providerRef: txRef,
+        status: "PENDING",
+        amount,
+        currency: plan.currency,
+      },
+    }),
+  ]);
+
+  const env = getEnv();
+  const result = await initiatePayment({
+    txRef,
+    amount,
+    currency: plan.currency,
+    redirectUrl: `${env.NEXT_PUBLIC_APP_URL}/admin/billing/callback?tx_ref=${encodeURIComponent(txRef)}`,
+    customer: {
+      email: customer.email,
+      phoneNumber: customer.phone || "0000000000",
+      name: customer.name,
+    },
+    meta: { dealershipId, subscriptionId: subscription.id, planId: plan.id },
+    title: `${plan.name} plan subscription`,
+    description: `${input.billingInterval === "YEARLY" ? "Yearly" : "Monthly"} subscription to the ${plan.name} plan`,
+  });
+
+  if (!result.ok) {
+    await db.paymentTransaction.updateMany({
+      where: { providerRef: txRef, status: "PENDING" },
+      data: { status: "FAILED" },
+    });
+    return { ok: false, error: result.error };
+  }
+
+  await recordAuditLog({
+    dealershipId,
+    action: "subscription.checkout_started",
+    entityType: "Subscription",
+    entityId: subscription.id,
+    after: { planId: plan.id, billingInterval: input.billingInterval, amount, txRef },
+  });
+
+  return { ok: true, checkoutUrl: result.checkoutUrl };
+}
+
+export type SubscriptionPaymentStatusView = {
+  paymentStatus: string;
+  subscriptionStatus: string;
+  dealerSlug: string;
+};
+
+/** Unscoped by design: the callback page only has a tx_ref, not a dealershipId. */
+export async function getSubscriptionPaymentStatusByTxRef(
+  txRef: string,
+): Promise<SubscriptionPaymentStatusView | null> {
+  const platform = forPlatform();
+  const txn = await platform.paymentTransaction.findUnique({
+    where: { providerRef: txRef },
+    include: { subscription: true, dealership: { select: { slug: true } } },
+  });
+  if (!txn || !txn.subscription) return null;
+
+  return {
+    paymentStatus: txn.status,
+    subscriptionStatus: txn.subscription.status,
+    dealerSlug: txn.dealership.slug,
+  };
+}
+
+async function settleVerifiedSubscriptionPayment(
+  dealershipId: string,
+  txnId: string,
+  subscriptionId: string,
+) {
+  const db = forDealership(dealershipId);
+
+  const outcome = await db.$transaction(async (tx) => {
+    const claimed = await tx.paymentTransaction.updateMany({
+      where: { id: txnId, status: "PENDING" },
+      data: { status: "SUCCESSFUL", verifiedAt: new Date() },
+    });
+    if (claimed.count === 0) return null; // Replayed webhook — already settled.
+
+    const subscription = await tx.subscription.findUniqueOrThrow({
+      where: { id: subscriptionId },
+    });
+    const planId = subscription.pendingPlanId ?? subscription.planId;
+    const billingInterval = subscription.pendingBillingInterval ?? subscription.billingInterval;
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + billingIntervalDays(billingInterval) * 86_400_000);
+
+    const updated = await tx.subscription.update({
+      where: { id: subscriptionId },
+      data: {
+        status: "ACTIVE",
+        planId,
+        billingInterval,
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        pastDueSince: null,
+        dunningStage: 0,
+        lastDunningSentAt: null,
+        pendingPlanId: null,
+        pendingBillingInterval: null,
+      },
+      include: { plan: true },
+    });
+
+    return updated;
+  }, { timeout: 20_000, maxWait: 15_000 });
+
+  if (!outcome) return;
+
+  await forPlatform().dealership.update({
+    where: { id: dealershipId },
+    data: { status: "ACTIVE" },
+  });
+
+  await recordAuditLog({
+    dealershipId,
+    action: "subscription.payment_confirmed",
+    entityType: "Subscription",
+    entityId: subscriptionId,
+    after: { planId: outcome.planId, currentPeriodEnd: outcome.currentPeriodEnd },
+  });
+
+  await notifyDealerBilling(
+    dealershipId,
+    "SYSTEM",
+    "Payment received",
+    `Your payment for the ${outcome.plan.name} plan was received. Your subscription is active until ${outcome.currentPeriodEnd?.toLocaleDateString()}.`,
+  );
+}
+
+async function markSubscriptionPaymentFailed(
+  dealershipId: string,
+  txnId: string,
+  subscriptionId: string,
+) {
+  const db = forDealership(dealershipId);
+  await db.paymentTransaction.updateMany({
+    where: { id: txnId, status: "PENDING" },
+    data: { status: "FAILED" },
+  });
+
+  await recordAuditLog({
+    dealershipId,
+    action: "subscription.payment_failed",
+    entityType: "Subscription",
+    entityId: subscriptionId,
+  });
+
+  await notifyDealerBilling(
+    dealershipId,
+    "PAYMENT_FAILED",
+    "Payment attempt failed",
+    "Your subscription payment didn't go through. Please try again from the Billing page to keep your account active.",
+  );
+}
+
+export type DunningResult = {
+  trialExpired: number;
+  renewalDue: number;
+  reminderSent: number;
+  suspended: number;
+  cancelled: number;
+};
+
+/**
+ * Run per-dealership by the /api/cron/subscription-dunning Vercel Cron
+ * target. Advances the Subscription/Dealership status pair through
+ * TRIALING/ACTIVE -> PAST_DUE (grace period, reminders) -> SUSPENDED
+ * (storefront goes down, admin shows a pay-now wall) -> CANCELLED (long
+ * unresolved suspension). Never runs more than one transition per call so a
+ * missed run can't skip straight from ACTIVE to SUSPENDED without at least
+ * one dunning reminder landing first.
+ */
+export async function runSubscriptionDunning(dealershipId: string): Promise<DunningResult> {
+  const result: DunningResult = {
+    trialExpired: 0,
+    renewalDue: 0,
+    reminderSent: 0,
+    suspended: 0,
+    cancelled: 0,
+  };
+
+  const db = forDealership(dealershipId);
+  const subscription = await db.subscription.findUnique({ where: { dealershipId } });
+  if (!subscription) return result;
+
+  const now = new Date();
+
+  if (subscription.status === "TRIALING" && subscription.trialEndsAt && subscription.trialEndsAt < now) {
+    await db.subscription.update({
+      where: { dealershipId },
+      data: { status: "PAST_DUE", pastDueSince: now, dunningStage: 0 },
+    });
+    await forPlatform().dealership.update({
+      where: { id: dealershipId },
+      data: { status: "TRIAL_EXPIRED" },
+    });
+    await recordAuditLog({
+      dealershipId,
+      action: "subscription.trial_expired",
+      entityType: "Subscription",
+      entityId: subscription.id,
+    });
+    await notifyDealerBilling(
+      dealershipId,
+      "SUBSCRIPTION_TRIAL_ENDING",
+      "Your trial has ended",
+      `Your free trial has ended. Choose a plan and pay on the Billing page within ${GRACE_PERIOD_DAYS} days to keep your storefront online.`,
+    );
+    result.trialExpired += 1;
+    return result;
+  }
+
+  if (subscription.status === "ACTIVE" && subscription.currentPeriodEnd && subscription.currentPeriodEnd < now) {
+    await db.subscription.update({
+      where: { dealershipId },
+      data: { status: "PAST_DUE", pastDueSince: now, dunningStage: 0 },
+    });
+    await forPlatform().dealership.update({
+      where: { id: dealershipId },
+      data: { status: "TRIAL_EXPIRED" },
+    });
+    await recordAuditLog({
+      dealershipId,
+      action: "subscription.renewal_due",
+      entityType: "Subscription",
+      entityId: subscription.id,
+    });
+    await notifyDealerBilling(
+      dealershipId,
+      "SUBSCRIPTION_PAST_DUE",
+      "Your subscription payment is due",
+      `Your billing period has ended. Please pay on the Billing page within ${GRACE_PERIOD_DAYS} days to keep your storefront online.`,
+    );
+    result.renewalDue += 1;
+    return result;
+  }
+
+  if (subscription.status === "PAST_DUE" && subscription.pastDueSince) {
+    const daysPastDue = daysSince(subscription.pastDueSince, now);
+
+    if (daysPastDue >= GRACE_PERIOD_DAYS) {
+      await db.subscription.update({ where: { dealershipId }, data: { status: "SUSPENDED" } });
+      await forPlatform().dealership.update({
+        where: { id: dealershipId },
+        data: { status: "SUSPENDED" },
+      });
+      await recordAuditLog({
+        dealershipId,
+        action: "subscription.suspended",
+        entityType: "Subscription",
+        entityId: subscription.id,
+      });
+      await notifyDealerBilling(
+        dealershipId,
+        "SUBSCRIPTION_SUSPENDED",
+        "Your account has been suspended",
+        "Your storefront is now offline due to non-payment. Pay on the Billing page to reactivate immediately.",
+      );
+      result.suspended += 1;
+      return result;
+    }
+
+    const nextStage = DUNNING_REMINDER_DAYS.findIndex(
+      (thresholdDays, index) => daysPastDue >= thresholdDays && subscription.dunningStage < index + 1,
+    );
+    if (nextStage !== -1) {
+      await db.subscription.update({
+        where: { dealershipId },
+        data: { dunningStage: nextStage + 1, lastDunningSentAt: now },
+      });
+      await notifyDealerBilling(
+        dealershipId,
+        "SUBSCRIPTION_PAST_DUE",
+        "Payment reminder",
+        `Your subscription payment is still due. Your storefront will be suspended in ${Math.max(0, Math.ceil(GRACE_PERIOD_DAYS - daysPastDue))} day(s) if payment isn't received.`,
+      );
+      result.reminderSent += 1;
+    }
+    return result;
+  }
+
+  if (subscription.status === "SUSPENDED" && subscription.pastDueSince) {
+    const daysSuspended = daysSince(subscription.pastDueSince, now);
+    if (daysSuspended >= GRACE_PERIOD_DAYS + AUTO_CANCEL_AFTER_SUSPENDED_DAYS) {
+      await db.subscription.update({ where: { dealershipId }, data: { status: "CANCELLED" } });
+      await forPlatform().dealership.update({
+        where: { id: dealershipId },
+        data: { status: "CANCELLED" },
+      });
+      await recordAuditLog({
+        dealershipId,
+        action: "subscription.cancelled_after_suspension",
+        entityType: "Subscription",
+        entityId: subscription.id,
+      });
+      result.cancelled += 1;
+    }
+  }
+
+  return result;
 }

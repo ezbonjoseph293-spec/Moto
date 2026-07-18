@@ -4,9 +4,14 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { requireRole } from "@/features/auth/require-role";
+import { forDealership } from "@/features/tenancy";
 import { rateLimit } from "@/lib/rate-limit";
 import * as paymentsService from "./service";
-import { reservationNoteSchema, reserveVehicleSchema } from "./schema";
+import {
+  initiateSubscriptionPaymentSchema,
+  reservationNoteSchema,
+  reserveVehicleSchema,
+} from "./schema";
 
 export type FormState = { ok: boolean; error?: string; message?: string };
 
@@ -97,4 +102,46 @@ export async function markReservationDisputedAction(
     parsed.data.notes,
   );
   return { ok: true, message: "Marked as disputed." };
+}
+
+// ============================================================================
+// Admin: Billing (Stage 8)
+// ============================================================================
+
+export async function initiateSubscriptionPaymentAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireRole(["OWNER", "MANAGER"]);
+  if (!user.dealershipId) return { ok: false, error: "This account has no dealership." };
+
+  const parsed = initiateSubscriptionPaymentSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const setting = await forDealership(user.dealershipId).setting.findUnique({
+    where: { dealershipId: user.dealershipId },
+  });
+
+  const result = await paymentsService.initiateSubscriptionPayment(user.dealershipId, parsed.data, {
+    name: user.name,
+    email: user.email,
+    phone: setting?.phonePrimary ?? undefined,
+  });
+  if (!result.ok) return { ok: false, error: result.error };
+
+  redirect(result.checkoutUrl);
+}
+
+export type SubscriptionPaymentStatusResult = Awaited<
+  ReturnType<typeof paymentsService.getSubscriptionPaymentStatusByTxRef>
+>;
+
+/** Polled from the /admin/billing/callback page after Flutterwave redirects back. */
+export async function getSubscriptionPaymentStatusAction(
+  txRef: string,
+): Promise<SubscriptionPaymentStatusResult> {
+  await requireRole(["OWNER", "MANAGER", "SALES"]);
+  return paymentsService.getSubscriptionPaymentStatusByTxRef(txRef);
 }

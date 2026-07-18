@@ -76,7 +76,25 @@ describe("requireRole", () => {
       name: ACTIVE_USER.name,
       role: ACTIVE_USER.role,
       dealershipId: ACTIVE_USER.dealershipId,
+      impersonatedBy: null,
     });
+  });
+
+  it("surfaces impersonatedBy when the session carries impersonation claims", async () => {
+    authMock.mockResolvedValue({
+      user: {
+        id: ACTIVE_USER.id,
+        rtid: "rt-1",
+        impersonatorId: "admin-1",
+        impersonatorName: "Platform Admin",
+      },
+    });
+    findUniqueMock.mockResolvedValue(ACTIVE_USER);
+    isRefreshTokenValidMock.mockResolvedValue(true);
+
+    const result = await requireRole(["OWNER", "MANAGER"]);
+
+    expect(result.impersonatedBy).toEqual({ id: "admin-1", name: "Platform Admin" });
   });
 
   it("honors a custom redirectTo for the unauthenticated case", async () => {

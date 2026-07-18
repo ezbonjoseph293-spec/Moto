@@ -14,6 +14,15 @@ declare module "@auth/core/types" {
     dealershipId: string | null;
     /** RefreshToken row id backing this session — see src/features/auth/service.ts. */
     rtid: string;
+    /**
+     * Set only while a platform admin is impersonating this user for support
+     * (see src/features/platform/impersonation.ts). Carries the original
+     * admin's identity + their own still-valid rtid, so "exit impersonation"
+     * can restore their session without a second sign-in.
+     */
+    impersonatorId?: string | null;
+    impersonatorName?: string | null;
+    impersonatorRtid?: string | null;
   }
 
   interface Session {
@@ -22,6 +31,9 @@ declare module "@auth/core/types" {
       role: UserRole;
       dealershipId: string | null;
       rtid: string;
+      impersonatorId?: string | null;
+      impersonatorName?: string | null;
+      impersonatorRtid?: string | null;
     } & DefaultSession["user"];
   }
 }
@@ -32,5 +44,8 @@ declare module "@auth/core/jwt" {
     role: UserRole;
     dealershipId: string | null;
     rtid: string;
+    impersonatorId?: string | null;
+    impersonatorName?: string | null;
+    impersonatorRtid?: string | null;
   }
 }

@@ -10,6 +10,8 @@ export type AuthenticatedUser = {
   name: string;
   role: UserRole;
   dealershipId: string | null;
+  /** Set only while a platform admin is impersonating this user for support. */
+  impersonatedBy: { id: string; name: string } | null;
 };
 
 /**
@@ -53,5 +55,8 @@ export async function requireRole(
     name: user.name,
     role: user.role,
     dealershipId: user.dealershipId,
+    impersonatedBy: sessionUser.impersonatorId
+      ? { id: sessionUser.impersonatorId, name: sessionUser.impersonatorName ?? "Platform admin" }
+      : null,
   };
 }

@@ -37,6 +37,18 @@ export default async function StorefrontLayout({
 
   if (!dealer) notFound();
 
+  if (dealer.status === "SUSPENDED" || dealer.status === "CANCELLED") {
+    const dealerName = dealer.setting?.businessName || dealer.name;
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-surface px-4 text-center">
+        <h1 className="font-heading text-2xl font-bold text-ink">{dealerName}</h1>
+        <p className="mt-3 max-w-md text-sm text-muted-foreground">
+          This storefront is temporarily unavailable. Please check back soon.
+        </p>
+      </div>
+    );
+  }
+
   const setting = dealer.setting;
   const dealerName = setting?.businessName || dealer.name;
   const headerLinks = dealer.menus.filter((m) => m.location === "HEADER");

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Car, Inbox, LayoutDashboard, Settings, Wallet } from "lucide-react";
+import { Car, CreditCard, Inbox, LayoutDashboard, Settings, Wallet } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ export const adminNavItems: NavItem[] = [
   { href: "/admin/inventory", label: "Inventory", icon: Car },
   { href: "/admin/leads", label: "Leads", icon: Inbox },
   { href: "/admin/deposits", label: "Deposits", icon: Wallet },
+  { href: "/admin/billing", label: "Billing", icon: CreditCard },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

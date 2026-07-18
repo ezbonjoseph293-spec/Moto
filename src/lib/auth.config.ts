@@ -30,6 +30,13 @@ export const authConfig = {
         token.role = user.role;
         token.dealershipId = user.dealershipId;
         token.rtid = user.rtid;
+        // Present only for the "impersonate" provider's authorize() results;
+        // undefined otherwise clears any prior impersonation claim, so
+        // exiting impersonation (which signs back in as the plain admin
+        // user) correctly drops these fields from the new token.
+        token.impersonatorId = user.impersonatorId ?? null;
+        token.impersonatorName = user.impersonatorName ?? null;
+        token.impersonatorRtid = user.impersonatorRtid ?? null;
       }
       return token;
     },
@@ -38,6 +45,9 @@ export const authConfig = {
       session.user.role = token.role;
       session.user.dealershipId = token.dealershipId;
       session.user.rtid = token.rtid;
+      session.user.impersonatorId = token.impersonatorId ?? null;
+      session.user.impersonatorName = token.impersonatorName ?? null;
+      session.user.impersonatorRtid = token.impersonatorRtid ?? null;
       return session;
     },
   },

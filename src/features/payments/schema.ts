@@ -30,3 +30,10 @@ export const reservationNoteSchema = z.object({
   notes: optionalString(z.string().trim().max(2000)),
 });
 export type ReservationNoteInput = z.infer<typeof reservationNoteSchema>;
+
+/** Dealer-facing "pay now" / "change plan and pay" form on /admin/billing. */
+export const initiateSubscriptionPaymentSchema = z.object({
+  planId: z.string().min(1),
+  billingInterval: z.enum(["MONTHLY", "YEARLY"]),
+});
+export type InitiateSubscriptionPaymentInput = z.infer<typeof initiateSubscriptionPaymentSchema>;
