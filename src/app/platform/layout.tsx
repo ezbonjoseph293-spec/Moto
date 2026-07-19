@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { requireRole } from "@/features/auth/require-role";
-import { logoutAction } from "@/features/auth/actions";
-import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/features/auth/logout-button";
 
 /**
  * Platform Super Admin shell. Simple top-nav layout (operator-only surface,
@@ -22,11 +21,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
           </Link>
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm text-white/70">{user.name}</span>
-            <form action={logoutAction}>
-              <Button type="submit" variant="inverse" size="sm">
-                Log out
-              </Button>
-            </form>
+            <LogoutButton variant="inverse" size="sm" />
           </div>
         </div>
       </header>

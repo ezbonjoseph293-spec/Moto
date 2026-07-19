@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +33,10 @@ export function DealerActionsForm({
   dealershipStatus: string;
   plans: { id: string; name: string }[];
 }) {
-  const [extendState, extendAction, extendPending] = useActionState(extendTrialAction, initialState);
+  const [extendState, extendAction, extendPending] = useActionState(
+    extendTrialAction,
+    initialState,
+  );
   const [suspendState, suspendAction, suspendPending] = useActionState(
     suspendDealerAction,
     initialState,
@@ -41,12 +45,11 @@ export function DealerActionsForm({
     reactivateDealerAction,
     initialState,
   );
-  const [planState, planAction, planPending] = useActionState(
-    changeDealerPlanAction,
-    initialState,
-  );
+  const [planState, planAction, planPending] = useActionState(changeDealerPlanAction, initialState);
 
-  const isSuspendedOrCancelled = dealershipStatus === "SUSPENDED" || dealershipStatus === "CANCELLED";
+  const isSuspendedOrCancelled =
+    dealershipStatus === "SUSPENDED" || dealershipStatus === "CANCELLED";
+  const suspendFormRef = useRef<HTMLFormElement>(null);
 
   return (
     <div className="space-y-4 rounded-lg border border-border bg-surface p-4">
@@ -106,13 +109,20 @@ export function DealerActionsForm({
             )}
           </form>
         ) : (
-          <form action={suspendAction} className="space-y-2">
+          <form ref={suspendFormRef} action={suspendAction} className="space-y-2">
             <input type="hidden" name="dealershipId" value={dealershipId} />
             <Label htmlFor="reason">Suspend dealer</Label>
             <Textarea id="reason" name="reason" rows={2} placeholder="Reason (optional)" />
-            <Button type="submit" size="sm" variant="destructive" disabled={suspendPending}>
-              {suspendPending ? "Saving…" : "Suspend"}
-            </Button>
+            <ConfirmSubmitButton
+              formRef={suspendFormRef}
+              title="Suspend this dealer?"
+              description="Their storefront goes offline immediately and staff are locked out of the admin dashboard except billing, until reactivated or they pay."
+              confirmLabel="Suspend"
+              pendingLabel="Saving…"
+              isPending={suspendPending}
+              variant="destructive"
+              size="sm"
+            />
             {suspendState.error && <p className="text-sm text-destructive">{suspendState.error}</p>}
             {suspendState.message && (
               <p className="text-sm text-available">{suspendState.message}</p>

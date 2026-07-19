@@ -5,6 +5,7 @@ import type { VehicleVideo } from "@prisma/client";
 import { Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { Input } from "@/components/ui/input";
 import { addVehicleVideoAction, deleteVehicleVideoAction } from "./actions";
 
@@ -65,16 +66,23 @@ export function VehicleVideoManager({
               >
                 {video.url}
               </a>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-7 shrink-0"
-                onClick={() => handleDelete(video.id)}
-                aria-label="Remove video"
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
+              <ConfirmActionButton
+                title="Remove this video?"
+                description="It will no longer show on this vehicle's listing."
+                confirmLabel="Remove"
+                onConfirm={() => handleDelete(video.id)}
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0"
+                    aria-label="Remove video"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </Button>
+                }
+              />
             </li>
           ))}
         </ul>

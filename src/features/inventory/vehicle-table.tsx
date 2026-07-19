@@ -85,6 +85,7 @@ function formatPrice(price: string, currency: string) {
 export function VehicleTable({ vehicles }: { vehicles: VehicleRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const router = useRouter();
 
   const allSelected = vehicles.length > 0 && selected.size === vehicles.length;
@@ -313,12 +314,10 @@ export function VehicleTable({ vehicles }: { vehicles: VehicleRow[] }) {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() =>
-                            startTransition(async () => {
-                              await deleteVehicleAction(vehicle.id);
-                              router.refresh();
-                            })
-                          }
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setDeleteTarget({ id: vehicle.id, title: vehicle.title });
+                          }}
                         >
                           <Trash2 className="size-4" aria-hidden="true" />
                           Delete
@@ -332,6 +331,38 @@ export function VehicleTable({ vehicles }: { vehicles: VehicleRow[] }) {
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.title}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes this vehicle and its media. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const target = deleteTarget;
+                if (!target) return;
+                startTransition(async () => {
+                  await deleteVehicleAction(target.id);
+                  router.refresh();
+                });
+                setDeleteTarget(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

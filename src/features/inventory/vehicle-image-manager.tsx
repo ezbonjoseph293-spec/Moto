@@ -17,6 +17,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Loader2, Star, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { cn } from "@/lib/utils";
 import { uploadToCloudinary } from "@/components/media/upload-file";
 import {
@@ -79,16 +80,23 @@ function SortableThumb({
             <Star className="size-4" aria-hidden="true" />
           </Button>
         )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="ml-auto size-7 text-white hover:bg-white/20 hover:text-white"
-          onClick={() => onDelete(image.id)}
-          aria-label="Delete image"
-        >
-          <Trash2 className="size-4" aria-hidden="true" />
-        </Button>
+        <ConfirmActionButton
+          title="Delete this photo?"
+          description="This cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={() => onDelete(image.id)}
+          trigger={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="ml-auto size-7 text-white hover:bg-white/20 hover:text-white"
+              aria-label="Delete image"
+            >
+              <Trash2 className="size-4" aria-hidden="true" />
+            </Button>
+          }
+        />
       </div>
     </div>
   );

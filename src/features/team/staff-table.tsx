@@ -5,6 +5,7 @@ import type { User } from "@prisma/client";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import {
   Select,
   SelectContent,
@@ -33,7 +34,8 @@ function StaffRow({ member, currentUserId }: { member: User; currentUserId: stri
     <li className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-ink">
-          {member.name} {member.id === currentUserId && <span className="text-muted-foreground">(you)</span>}
+          {member.name}{" "}
+          {member.id === currentUserId && <span className="text-muted-foreground">(you)</span>}
         </p>
         <p className="truncate text-xs text-muted-foreground">{member.email}</p>
       </div>
@@ -52,16 +54,27 @@ function StaffRow({ member, currentUserId }: { member: User; currentUserId: stri
             </SelectContent>
           </Select>
         )}
-        {member.role !== "OWNER" && (
+        {member.role !== "OWNER" && member.isActive && (
+          <ConfirmActionButton
+            title={`Deactivate ${member.name}?`}
+            description="They'll be signed out immediately and won't be able to log back in until reactivated."
+            confirmLabel="Deactivate"
+            onConfirm={() => startTransition(() => void setStaffActiveAction(member.id, false))}
+            trigger={
+              <Button type="button" variant="outline" size="sm">
+                Deactivate
+              </Button>
+            }
+          />
+        )}
+        {member.role !== "OWNER" && !member.isActive && (
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() =>
-              startTransition(() => void setStaffActiveAction(member.id, !member.isActive))
-            }
+            onClick={() => startTransition(() => void setStaffActiveAction(member.id, true))}
           >
-            {member.isActive ? "Deactivate" : "Reactivate"}
+            Reactivate
           </Button>
         )}
       </div>
@@ -70,13 +83,7 @@ function StaffRow({ member, currentUserId }: { member: User; currentUserId: stri
   );
 }
 
-export function StaffTable({
-  staff,
-  currentUserId,
-}: {
-  staff: User[];
-  currentUserId: string;
-}) {
+export function StaffTable({ staff, currentUserId }: { staff: User[]; currentUserId: string }) {
   return (
     <ul className="space-y-2">
       {staff.map((member) => (

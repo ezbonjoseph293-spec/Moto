@@ -6,6 +6,7 @@ import type { BodyType } from "@prisma/client";
 import { ArrowDown, ArrowUp, Shapes, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { deleteBodyTypeAction, moveBodyTypeAction } from "./actions";
 import { BodyTypeFormDialog } from "./body-type-form-dialog";
 
@@ -81,22 +82,33 @@ export function BodyTypeManager({ bodyTypes }: { bodyTypes: BodyTypeRow[] }) {
                   <ArrowDown className="size-4" aria-hidden="true" />
                 </Button>
                 <BodyTypeFormDialog bodyType={bodyType} />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() =>
+                <ConfirmActionButton
+                  title={`Delete ${bodyType.name}?`}
+                  description={
+                    bodyType._count.vehicles > 0
+                      ? `${bodyType._count.vehicles} vehicle(s) currently use this body type. This cannot be undone.`
+                      : "This cannot be undone."
+                  }
+                  confirmLabel="Delete"
+                  onConfirm={() =>
                     startTransition(async () => {
                       const result = await deleteBodyTypeAction(bodyType.id);
                       if (!result.ok) setError(result.error ?? "Could not delete body type.");
                       else setError(null);
                     })
                   }
-                  aria-label={`Delete ${bodyType.name}`}
-                >
-                  <Trash2 className="size-4 text-destructive" aria-hidden="true" />
-                </Button>
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label={`Delete ${bodyType.name}`}
+                    >
+                      <Trash2 className="size-4 text-destructive" aria-hidden="true" />
+                    </Button>
+                  }
+                />
               </div>
             </li>
           ))}

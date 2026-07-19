@@ -1,5 +1,4 @@
-import { logoutAction } from "@/features/auth/actions";
-import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/features/auth/logout-button";
 import type { AuthenticatedUser } from "@/features/auth/require-role";
 
 const ROLE_LABEL: Record<AuthenticatedUser["role"], string> = {
@@ -17,11 +16,7 @@ export function AdminUserMenu({ user }: { user: AuthenticatedUser }) {
         <p className="truncate text-sm font-medium text-ink">{user.name}</p>
         <p className="text-xs text-muted-foreground">{ROLE_LABEL[user.role]}</p>
       </div>
-      <form action={logoutAction}>
-        <Button type="submit" variant="outline" size="sm">
-          Log out
-        </Button>
-      </form>
+      <LogoutButton variant="outline" size="sm" />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Star, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { deleteTestimonialAction } from "./actions";
 import { TestimonialFormDialog } from "./testimonial-form-dialog";
 
@@ -69,21 +70,28 @@ export function TestimonialManager({ testimonials }: { testimonials: Testimonial
                   ))}
                 </div>
                 <TestimonialFormDialog testimonial={t} />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() =>
+                <ConfirmActionButton
+                  title="Delete this testimonial?"
+                  description={`The testimonial from ${t.customerName} will be permanently removed, including from your homepage if it's featured.`}
+                  confirmLabel="Delete"
+                  onConfirm={() =>
                     startTransition(async () => {
                       await deleteTestimonialAction(t.id);
                       setError(null);
                     })
                   }
-                  aria-label={`Delete testimonial from ${t.customerName}`}
-                >
-                  <Trash2 className="size-4 text-destructive" aria-hidden="true" />
-                </Button>
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label={`Delete testimonial from ${t.customerName}`}
+                    >
+                      <Trash2 className="size-4 text-destructive" aria-hidden="true" />
+                    </Button>
+                  }
+                />
               </div>
             </li>
           ))}

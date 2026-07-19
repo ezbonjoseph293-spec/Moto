@@ -5,6 +5,7 @@ import type { Menu } from "@prisma/client";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -60,15 +61,22 @@ function MenuList({ items, location }: { items: Menu[]; location: "HEADER" | "FO
                 >
                   <ArrowDown className="size-4" aria-hidden="true" />
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => startTransition(() => void deleteMenuItemAction(item.id))}
-                  aria-label={`Delete ${item.label}`}
-                >
-                  <Trash2 className="size-4 text-destructive" aria-hidden="true" />
-                </Button>
+                <ConfirmActionButton
+                  title={`Delete "${item.label}"?`}
+                  description="This link will be removed from the menu. You can always add it back."
+                  confirmLabel="Delete"
+                  onConfirm={() => startTransition(() => void deleteMenuItemAction(item.id))}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Delete ${item.label}`}
+                    >
+                      <Trash2 className="size-4 text-destructive" aria-hidden="true" />
+                    </Button>
+                  }
+                />
               </div>
             </li>
           ))}

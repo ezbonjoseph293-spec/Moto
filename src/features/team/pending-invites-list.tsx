@@ -5,6 +5,7 @@ import type { StaffInvite } from "@prisma/client";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { revokeInviteAction } from "./actions";
 
 type InviteRow = StaffInvite & { invitedBy: { name: string } };
@@ -32,16 +33,23 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
                 {invite.invitedBy.name} · expires {invite.expiresAt.toLocaleDateString()}
               </p>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={() => startTransition(() => void revokeInviteAction(invite.id))}
-              aria-label={`Revoke invite to ${invite.email}`}
-            >
-              <X className="size-4 text-destructive" aria-hidden="true" />
-            </Button>
+            <ConfirmActionButton
+              title="Revoke this invite?"
+              description={`${invite.email} will no longer be able to accept this invite and join your team.`}
+              confirmLabel="Revoke"
+              onConfirm={() => startTransition(() => void revokeInviteAction(invite.id))}
+              trigger={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  aria-label={`Revoke invite to ${invite.email}`}
+                >
+                  <X className="size-4 text-destructive" aria-hidden="true" />
+                </Button>
+              }
+            />
           </li>
         ))}
       </ul>

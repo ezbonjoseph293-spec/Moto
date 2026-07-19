@@ -5,6 +5,7 @@ import type { VehicleDocument } from "@prisma/client";
 import { FileText, Loader2, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { Input } from "@/components/ui/input";
 import { uploadToCloudinary } from "@/components/media/upload-file";
 import { addVehicleDocumentAction, deleteVehicleDocumentAction } from "./actions";
@@ -68,16 +69,23 @@ export function VehicleDocumentManager({
                 <FileText className="size-4 shrink-0" aria-hidden="true" />
                 <span className="truncate">{doc.label}</span>
               </a>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-7 shrink-0"
-                onClick={() => handleDelete(doc.id)}
-                aria-label="Remove document"
-              >
-                <Trash2 className="size-4" aria-hidden="true" />
-              </Button>
+              <ConfirmActionButton
+                title="Remove this document?"
+                description={`"${doc.label}" will no longer be available to buyers on this listing.`}
+                confirmLabel="Remove"
+                onConfirm={() => handleDelete(doc.id)}
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0"
+                    aria-label="Remove document"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </Button>
+                }
+              />
             </li>
           ))}
         </ul>

@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUp, Building2, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmActionButton } from "@/components/ui/confirm-action-button";
 import { deleteBrandAction, moveBrandAction } from "./actions";
 import { BrandFormDialog } from "./brand-form-dialog";
 
@@ -86,22 +87,33 @@ export function BrandManager({ brands }: { brands: BrandRow[] }) {
                   <ArrowDown className="size-4" aria-hidden="true" />
                 </Button>
                 <BrandFormDialog brand={brand} />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-8"
-                  onClick={() =>
+                <ConfirmActionButton
+                  title={`Delete ${brand.name}?`}
+                  description={
+                    brand._count.vehicles > 0
+                      ? `${brand._count.vehicles} vehicle(s) currently use this brand. This cannot be undone.`
+                      : "This cannot be undone."
+                  }
+                  confirmLabel="Delete"
+                  onConfirm={() =>
                     startTransition(async () => {
                       const result = await deleteBrandAction(brand.id);
                       if (!result.ok) setError(result.error ?? "Could not delete brand.");
                       else setError(null);
                     })
                   }
-                  aria-label={`Delete ${brand.name}`}
-                >
-                  <Trash2 className="size-4 text-destructive" aria-hidden="true" />
-                </Button>
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      aria-label={`Delete ${brand.name}`}
+                    >
+                      <Trash2 className="size-4 text-destructive" aria-hidden="true" />
+                    </Button>
+                  }
+                />
               </div>
             </li>
           ))}

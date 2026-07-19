@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import Link from "next/link";
 import { resetPasswordAction, type FormState } from "./actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { ConfirmSubmitButton } from "@/components/ui/confirm-submit-button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -12,6 +13,7 @@ const initialState: FormState = { ok: false };
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const [state, formAction, isPending] = useActionState(resetPasswordAction, initialState);
+  const formRef = useRef<HTMLFormElement>(null);
 
   if (state.ok && state.message) {
     return (
@@ -36,15 +38,14 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <CardDescription>Choose a new password for your account.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="space-y-4">
+        <form ref={formRef} action={formAction} className="space-y-4">
           <input type="hidden" name="token" value={token} />
 
           <div className="space-y-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required
@@ -53,9 +54,15 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
           {state.error && <p className="text-sm text-destructive">{state.error}</p>}
 
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? "Updating…" : "Update password"}
-          </Button>
+          <ConfirmSubmitButton
+            formRef={formRef}
+            title="Change your password?"
+            description="You'll be signed out of every other active session and need to log in again with the new password."
+            confirmLabel="Update password"
+            pendingLabel="Updating…"
+            isPending={isPending}
+            className="w-full"
+          />
         </form>
       </CardContent>
     </Card>
